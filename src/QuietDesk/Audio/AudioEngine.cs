@@ -33,6 +33,7 @@ internal sealed class MixBus : ISampleProvider,IDisposable
     private readonly Dictionary<string,float> targets=new();private readonly string assets;
     private readonly List<string> expired=new(4);
     internal int ActiveCount {get{lock(gate)return loops.Count;}}
+    private readonly StereoPeakLimiter limiter=new();
     private float[] scratch=new float[8192];private ISampleProvider? media;private float masterGain,mediaGain;
     internal volatile float Master=.45f,MediaLevel=.6f;
     internal volatile bool ReadMedia=true;
@@ -52,7 +53,8 @@ internal sealed class MixBus : ISampleProvider,IDisposable
                 loop.Read(scratch,0,count);for(int i=0;i<count;i++)buffer[offset+i]+=scratch[i]*.38f;
             }
             if(media!=null && ReadMedia) {var n=media.Read(scratch,0,count);for(int i=0;i<n;i++){mediaGain+=(MediaLevel-mediaGain)*.00015f;buffer[offset+i]+=scratch[i]*mediaGain;}}
-            for(int i=0;i<count;i++) {masterGain+=(Master-masterGain)*.0004f;var x=buffer[offset+i]*masterGain;buffer[offset+i]=x/(1+Math.Abs(x));}
+            for(int i=0;i<count;i++) {masterGain+=(Master-masterGain)*.0004f;var x=buffer[offset+i]*masterGain;buffer[offset+i]=x;}
+            limiter.Process(buffer,offset,count);
             return count;
         }
     }

@@ -1,0 +1,29 @@
+PASS Focus completion is silent and does not restart
+PASS Focus pause, resume and sleep gap
+PASS Focus splits midnight
+PASS Atomic state round trip and corrupt recovery
+PASS Only HTTP(S) station URLs accepted
+PASS Network fragments are combined and position is tracked
+PASS Ring buffer cannot grow past three seconds
+PASS Cancelled source open does not start a decoder
+PASS PCM + seamless loop boundary: rain
+PASS PCM + seamless loop boundary: stream
+PASS PCM + seamless loop boundary: waves
+PASS PCM + seamless loop boundary: wind
+PASS PCM + seamless loop boundary: birds
+PASS PCM + seamless loop boundary: fireplace
+PASS PCM + seamless loop boundary: windowrain
+PASS PCM + seamless loop boundary: storm
+PASS PCM + seamless loop boundary: night
+PASS PCM + seamless loop boundary: leaves
+PASS PCM + seamless loop boundary: white
+PASS PCM + seamless loop boundary: pink
+PASS PCM + seamless loop boundary: brown
+PASS PCM + seamless loop boundary: cafe
+PASS PCM + seamless loop boundary: library
+PASS PCM + seamless loop boundary: train
+PASS PCM + seamless loop boundary: fan
+PASS PCM + seamless loop boundary: keyboard
+PASS Four-channel DSP finite, bounded, and produces audio
+PASS Lazy mixer releases voices and never exceeds four
+PASS Local decoder feeds bounded three-second buffer

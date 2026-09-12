@@ -2,7 +2,7 @@
 
 适合工作与学习时使用的 Windows 桌面音乐播放器。采用原生 WPF 界面，以中性深灰与柔粉色为主，支持真正嵌入桌面的紧凑组件。
 
-当前版本 **0.3.2**：“我的组合”支持直接删除和撤销，详见 [修复记录](docs/validation-v032.md)。
+当前版本 **0.3.3**：修正共用输出链路的非线性失真，详见 [修复记录](docs/validation-v033.md)。
 
 ## 主要功能
 
@@ -26,7 +26,7 @@
 ./scripts/build.ps1 -Publish
 
 # 运行
-./artifacts/QuietDesk-v0.3.2-win-x64/QuietDesk.exe
+./artifacts/QuietDesk-v0.3.3-win-x64/QuietDesk.exe
 
 # 打包便携版与源码
 ./scripts/package.ps1

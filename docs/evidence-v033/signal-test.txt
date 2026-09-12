@@ -1,0 +1,5 @@
+PASS normal-range stereo signal is bit-identical after 256-frame delay
+PASS overload and transient peaks bounded to 0.98, stereo-linked, block-size invariant
+PASS digital silence remains exactly zero
+PASS full mixer at master=100%, media=100%: 1 kHz THD+N 0.000004%
+REFERENCE previous waveshaping formula: 1 kHz THD+N 9.549134%
