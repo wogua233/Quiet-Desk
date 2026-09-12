@@ -1,0 +1,96 @@
+[
+  {
+    "Name": "PRL",
+    "Url": "https://feeds.aps.org/rss/recent/prl.xml",
+    "status": 200,
+    "count": 100,
+    "result": "parsed",
+    "sample": "All Steerable Quantum Correlations Can Provide Thermodynamic Advantages in Cooling"
+  },
+  {
+    "Name": "PRX",
+    "Url": "https://feeds.aps.org/rss/recent/prx.xml",
+    "status": 200,
+    "count": 100,
+    "result": "parsed",
+    "sample": "Geometrically Frustrated Quadrupoles on the Pyrochlore Lattice and Generalized Spin Liquids"
+  },
+  {
+    "Name": "PRB",
+    "Url": "https://feeds.aps.org/rss/recent/prb.xml",
+    "status": 200,
+    "count": 100,
+    "result": "parsed",
+    "sample": "Josephson phase shift and diode effect due to the inverse spin Hall effect"
+  },
+  {
+    "Name": "PRE",
+    "Url": "https://feeds.aps.org/rss/recent/pre.xml",
+    "status": 200,
+    "count": 100,
+    "result": "parsed",
+    "sample": "Canonical criterion for third-order transitions identified by microcanonical inflection-point analysis"
+  },
+  {
+    "Name": "JACS",
+    "Url": "https://pubs.acs.org/action/showFeed?type=axatoc\u0026feed=rss\u0026jc=jacsat",
+    "result": "failed",
+    "error": "Response status code does not indicate success: 403 (Forbidden)."
+  },
+  {
+    "Name": "Nature",
+    "Url": "https://www.nature.com/nature.rss",
+    "status": 200,
+    "count": 75,
+    "result": "parsed",
+    "sample": "Briefing Chat: The Bunsen burner myth that turns out to be just hot air"
+  },
+  {
+    "Name": "Science",
+    "Url": "https://www.science.org/action/showFeed?type=etoc\u0026feed=rss\u0026jc=science",
+    "status": 200,
+    "count": 36,
+    "result": "parsed",
+    "sample": "Save the bogs, for peat\u2019s sake"
+  },
+  {
+    "Name": "Nature Communications",
+    "Url": "https://www.nature.com/ncomms.rss",
+    "status": 200,
+    "count": 8,
+    "result": "parsed",
+    "sample": "Disentangling the effect of space and electric field on photoelectrochemical water splitting"
+  },
+  {
+    "Name": "Nature Chemistry",
+    "Url": "https://www.nature.com/nchem.rss",
+    "status": 200,
+    "count": 8,
+    "result": "parsed",
+    "sample": "Nanoscale visualization of plasmon-enhanced hydrogen activation on a Pt(111) surface"
+  },
+  {
+    "Name": "Scientific American",
+    "Url": "https://www.scientificamerican.com/platform/syndication/rss/",
+    "status": 200,
+    "count": 50,
+    "result": "parsed",
+    "sample": "How AI can help with early schizophrenia diagnosis"
+  },
+  {
+    "Name": "BBC World",
+    "Url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "status": 200,
+    "count": 25,
+    "result": "parsed",
+    "sample": "Anthropic boss Dario Amodei calls for AI development to slow down"
+  },
+  {
+    "Name": "The Guardian World",
+    "Url": "https://www.theguardian.com/world/rss",
+    "status": 200,
+    "count": 45,
+    "result": "parsed",
+    "sample": "Burial of King Oyo takes place in Uganda as news anchor prepares for throne"
+  }
+]

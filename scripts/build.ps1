@@ -8,6 +8,6 @@ $env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
 $env:DOTNET_GENERATE_ASPNET_CERTIFICATE='false'
 $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH='false'
 $project=Join-Path $projectRoot 'src\QuietDesk\QuietDesk.csproj'
-if($Publish){& $dotnet publish $project -c Release -r win-x64 --self-contained true -o (Join-Path $projectRoot 'artifacts\QuietDesk-v0.3.4-win-x64')}
+if($Publish){& $dotnet publish $project -c Release -r win-x64 --self-contained true -o (Join-Path $projectRoot 'artifacts\QuietDesk-v0.4.0-win-x64')}
 else{& $dotnet build $project -c Release}
 if($LASTEXITCODE -ne 0){throw "Build failed: $LASTEXITCODE"}

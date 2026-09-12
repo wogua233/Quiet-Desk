@@ -11,6 +11,8 @@ internal static class Program
 {
     [STAThread] private static int Main(string[] args)
     {
+        if(args.Length>0&&args[0]=="--reading-worker")return Reading.ReadingWorker.Run(args);
+        if(args.Contains("--reading-test"))return Reading.ReadingVerification.Run(args);
         if(args.Contains("--signal-test"))return SignalVerification.Run(args);
         if(args.Contains("--scene-test"))return SceneSelectionVerification.Run(args);
         if(args.Contains("--desktop-test"))return RevisionVerification.Desktop(args);
@@ -48,6 +50,7 @@ internal static class Program
                 int ri=Array.IndexOf(args,"--acceptance-radio");if(ri>=0){var station=RadioDirectory.Domestic().First(s=>s.Format=="HLS/AAC");_ = model.PlayStation(station);}
                 recorder=new PerformanceRecorder(model,report,seconds,count,()=>app.Shutdown());
             }
+            app.Exit+=(_,_)=>window.DisposeReading();
             app.Run();return 0;
         }catch(Exception e){Directory.CreateDirectory(directory);File.WriteAllText(Path.Combine(directory,"startup-error.log"),e.ToString());MessageBox.Show("静隅暂时无法启动：\n"+e.Message,"静隅");return 1;}
         finally{diagnostic?.Dispose();recorder?.Dispose();desktop?.Dispose();tray?.Icon?.Dispose();tray?.Dispose();model?.Dispose();}

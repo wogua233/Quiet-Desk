@@ -1,0 +1,16 @@
+[
+  {
+    "channels": 1,
+    "warmupSeconds": 60,
+    "durationSeconds": 600.7585773,
+    "averageMachineCpuPercent": 0.0924699907613095,
+    "peakPrivateWorkingSetMiB": 66.1328125
+  },
+  {
+    "channels": 4,
+    "warmupSeconds": 60,
+    "durationSeconds": 600.1763097,
+    "averageMachineCpuPercent": 0.06413105437074718,
+    "peakPrivateWorkingSetMiB": 54.08984375
+  }
+]

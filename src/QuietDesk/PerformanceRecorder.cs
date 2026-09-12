@@ -25,13 +25,14 @@ internal sealed class PerformanceRecorder : IDisposable
     {
         process.Refresh();var now=watch.Elapsed.TotalSeconds;var cpu=process.TotalProcessorTime;
         double cpuSeconds=(cpu-previousCpu).TotalSeconds;long childWorking=0,childPrivate=0,childCommit=0;int children=0;
-        foreach(var id in MediaSession.DecoderProcesses.Keys)try{using var child=Process.GetProcessById(id);var total=child.TotalProcessorTime;cpuSeconds+=(total-decoderCpu.GetValueOrDefault(id)).TotalSeconds;decoderCpu[id]=total;GetProcessMemoryInfo(child.Handle,out var cm,(uint)Marshal.SizeOf<Counters>());childWorking+=child.WorkingSet64;childPrivate+=(long)cm.PrivateWorkingSetSize;childCommit+=child.PrivateMemorySize64;children++;}catch(ArgumentException){}catch(InvalidOperationException){}catch(System.ComponentModel.Win32Exception){}
+        foreach(var id in MediaSession.DecoderProcesses.Keys.Concat(Reading.ReadingWorker.Processes.Keys))try{using var child=Process.GetProcessById(id);var total=child.TotalProcessorTime;cpuSeconds+=(total-decoderCpu.GetValueOrDefault(id)).TotalSeconds;decoderCpu[id]=total;GetProcessMemoryInfo(child.Handle,out var cm,(uint)Marshal.SizeOf<Counters>());childWorking+=child.WorkingSet64;childPrivate+=(long)cm.PrivateWorkingSetSize;childCommit+=child.PrivateMemorySize64;children++;}catch(ArgumentException){}catch(InvalidOperationException){}catch(System.ComponentModel.Win32Exception){}
         var percent=cpuSeconds/(now-previous)/Environment.ProcessorCount*100;previousCpu=cpu;previous=now;
         GetProcessMemoryInfo(process.Handle,out var memory,(uint)Marshal.SizeOf<Counters>());
         samples.Add(new{seconds=now,cpuPercent=percent,workingSet=process.WorkingSet64+childWorking,privateBytes=process.PrivateMemorySize64+childCommit,privateWorkingSet=(long)memory.PrivateWorkingSetSize+childPrivate,decoderProcesses=children,decoderPrivateWorkingSet=childPrivate,playing=model.Playing,activeChannels=model.Channels.Count(c=>c.Enabled)});
         bool complete=now>=seconds+60;
-        if(samples.Count%10==0||complete){var temp=file+".tmp";File.WriteAllText(temp,JsonSerializer.Serialize(new{status=complete?"complete":"running",mode="full WPF app, main window hidden, embedded desktop card, muted master",warmupSeconds=60,channels,samples}));File.Move(temp,file,true);}
-        if(complete){timer.Stop();done();}
+        bool saved=false;
+        if(samples.Count%10==0||complete){try{var temp=file+".tmp";File.WriteAllText(temp,JsonSerializer.Serialize(new{status=complete?"complete":"running",mode="full WPF app, main window hidden, embedded desktop card, muted master",warmupSeconds=60,channels,samples}));File.Move(temp,file,true);saved=true;}catch(IOException){}catch(UnauthorizedAccessException){}}
+        if(complete&&saved){timer.Stop();done();}
     }
     public void Dispose(){timer.Stop();process.Dispose();}
 }

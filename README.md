@@ -2,9 +2,11 @@
 
 适合工作与学习时使用的 Windows 桌面音乐播放器。采用原生 WPF 界面，以中性深灰与柔粉色为主，支持真正嵌入桌面的紧凑组件。
 
-当前版本 **0.3.4**：修复音频输出缓冲区清零不完整导致的声音残留，自动回归测试及用户本机试听已确认修复。详见 [修复与验证记录](docs/validation-v034.md)。
+当前版本 **0.4.0**：新增期刊与新闻阅读模块，支持RSS订阅、中文短总结和按需全文精读。详见 [阅读使用说明](docs/READING.md) 与 [验证记录](docs/validation-v04.md)。
 
 ## 主要功能
+
+- **阅读**：12个内置学术/新闻来源、自定义RSS、日期回看与收藏；自配云端API生成中文摘要，闲置时处理全文。默认不启用、不订阅，API费用由服务方收取。
 
 - **18 种离线氛围音**：雨声、海浪、森林、咖啡馆、白噪声等，最多四路混音，可保存个人声音组合。
 - **音乐与电台**：本地 MP3 / WAV / FLAC 队列，Radio Browser 搜索、收藏，以及独立内置的国内电台目录；支持 MP3、HLS/AAC 直播。
@@ -26,7 +28,7 @@
 ./scripts/build.ps1 -Publish
 
 # 运行
-./artifacts/QuietDesk-v0.3.4-win-x64/QuietDesk.exe
+./artifacts/QuietDesk-v0.4.0-win-x64/QuietDesk.exe
 
 # 打包便携版与源码
 ./scripts/package.ps1
@@ -38,6 +40,7 @@
 
 - [使用说明](docs/USER-GUIDE.md) · [0.3 更新说明](docs/CHANGELOG-v03.md)
 - [验收报告](docs/validation-v03.md) · [实机复核清单](docs/manual-checks-v03.md)
+- [阅读依赖许可](docs/READING-LICENSES.md)
 - [声音来源与许可](docs/SOUND-LICENSES.md) · [FFmpeg 版本、源码与许可](docs/FFMPEG.md)
 
 声音素材和第三方组件分别遵循各自许可；其中图书馆录音为 **CC BY-NC 4.0，仅限非商业使用**。国内电台已做实际解码测试，但不能排除系统 VPN 路由影响，也不保证所有地区网络均可用。桌面嵌入依赖 Windows 外壳行为，部分硬件与交互场景仍待实机确认，详见验收报告。

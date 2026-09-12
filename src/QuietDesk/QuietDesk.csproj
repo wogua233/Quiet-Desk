@@ -5,11 +5,14 @@
     <Nullable>enable</Nullable><ImplicitUsings>disable</ImplicitUsings>
     <ApplicationManifest>../QuietDesk.DesktopProbe/app.manifest</ApplicationManifest>
     <NoWarn>$(NoWarn);WFO0003</NoWarn><AssemblyName>QuietDesk</AssemblyName>
-    <Version>0.3.4</Version>
+    <Version>0.4.0</Version>
     <ApplicationIcon>Assets/quietdesk.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    <PackageReference Include="PdfPig" Version="0.1.16" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.13.0" />
     <Content Include="Assets/**/*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../docs/SOUND-LICENSES.md" Link="SOUND-LICENSES.md" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../docs/licenses/*" Link="licenses/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
