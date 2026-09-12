@@ -11,6 +11,7 @@ internal static class Program
 {
     [STAThread] private static int Main(string[] args)
     {
+        if(args.Contains("--scene-test"))return SceneSelectionVerification.Run(args);
         if(args.Contains("--desktop-test"))return RevisionVerification.Desktop(args);
         if(args.Contains("--revision-test"))return RevisionVerification.Run(args);
         if(args.Contains("--domestic-test"))return RevisionVerification.Domestic(args);

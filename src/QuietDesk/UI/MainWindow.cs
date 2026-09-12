@@ -14,6 +14,7 @@ namespace QuietDesk;
 
 internal sealed class MainWindow : Window
 {
+    private readonly WrapPanel savedSceneButtons=new();
     private readonly PlayerModel model;private readonly ContentControl body=new();private readonly StackPanel nav=new();
     private CancellationTokenSource? search;private int currentPage;private readonly System.Collections.Generic.Dictionary<int,UIElement> pages=new();private readonly System.Collections.Generic.Dictionary<int,double> offsets=new();
     internal Action? ReattachDesktop;internal Action? ExitApp;
@@ -33,7 +34,7 @@ internal sealed class MainWindow : Window
         var content=new Border{Child=body,Padding=new Thickness(28,28,28,16),Background=Ui.B("#222224"),BorderBrush=Ui.B("#333036"),BorderThickness=new Thickness(1,0,0,0)};Grid.SetColumn(content,1);upper.Children.Add(content);
         var bottom=BuildPlayer();Grid.SetRow(bottom,1);shell.Children.Add(bottom);
         Navigate(0);
-        model.Scenes.CollectionChanged+=(_,_)=>{pages.Remove(2);if(currentPage==2)Navigate(2);};model.Favorites.CollectionChanged+=(_,_)=>{pages.Remove(2);if(currentPage==2)Navigate(2);};
+        model.Scenes.CollectionChanged+=(_,_)=>{RefreshSavedSceneButtons();pages.Remove(2);if(currentPage==2)Navigate(2);};model.Favorites.CollectionChanged+=(_,_)=>{pages.Remove(2);if(currentPage==2)Navigate(2);};
         model.Queue.CollectionChanged+=(_,_)=>{pages.Remove(2);if(currentPage==2)Navigate(2);};
         Closing+=(_,e)=>{e.Cancel=true;Hide();};
         Shortcut(Key.Space,ModifierKeys.Control,()=>_ = model.TogglePlay());
@@ -59,6 +60,12 @@ internal sealed class MainWindow : Window
     }
     private StackPanel Heading(string eyebrow,string title,string subtitle)
     {var p=new StackPanel();p.Children.Add(Ui.Text(eyebrow,10,"#C2BEC8"));Ui.Gap(p,8);p.Children.Add(Ui.Text(title,28,"#FCFCFC"));Ui.Gap(p,8);p.Children.Add(Ui.Text(subtitle,12));Ui.Gap(p,24);return p;}
+    private void RefreshSavedSceneButtons()
+    {
+        savedSceneButtons.Children.Clear();
+        if(model.Scenes.Count==0){savedSceneButtons.Children.Add(Ui.Text("保存当前组合后，可在这里直接选择。",12));return;}
+        foreach(var scene in model.Scenes){var button=Ui.Button(scene.Name,()=>model.ApplyScene(scene));button.Content=new TextBlock{Text=scene.Name,TextTrimming=TextTrimming.CharacterEllipsis,TextWrapping=TextWrapping.NoWrap};button.MaxWidth=240;button.ToolTip=scene.Name;button.Margin=new Thickness(0,0,8,8);savedSceneButtons.Children.Add(button);}
+    }
     private UIElement SoundPage()
     {
         var page=Heading("声音场景","给此刻，一点安静。","18 种离线声音。选好组合，让注意力慢慢安定。");
@@ -66,6 +73,7 @@ internal sealed class MainWindow : Window
         var focus=new DockPanel();var buttons=new StackPanel{Orientation=Orientation.Horizontal,VerticalAlignment=VerticalAlignment.Center};DockPanel.SetDock(buttons,Dock.Right);focus.Children.Add(buttons);var start=Ui.Button("",model.ToggleFocus,true);Ui.BindContent(start,model,"FocusLabel");buttons.Children.Add(start);var reset=Ui.Button("重置",model.ResetFocus);reset.Margin=new Thickness(8,0,0,0);buttons.Children.Add(reset);var time=new StackPanel();time.Children.Add(Ui.Bound(model,"FocusText",32,"#FCFCFC"));time.Children.Add(Ui.Bound(model,"Today",12));focus.Children.Add(time);page.Children.Add(Ui.Panel(focus));Ui.Gap(page,20);
         var save=Ui.Button("保存当前组合",()=>{var name=Ask("保存声音组合","给组合起个名字",model.SceneName);if(name!=null&&(!model.Scenes.Any(x=>x.Name==name)||Confirm("替换同名组合？","原组合将被当前音量设置替换。")))model.SaveScene(name);});save.HorizontalAlignment=HorizontalAlignment.Right;
         var presets=new WrapPanel();foreach(var scene in new[]{new Scene{Name="雨天书桌",Levels=new(){{"windowrain",.5},{"fireplace",.18}}},new Scene{Name="林间清晨",Levels=new(){{"stream",.4},{"birds",.22}}},new Scene{Name="安静阅览室",Levels=new(){{"library",.4},{"brown",.12}}},new Scene{Name="夜行列车",Levels=new(){{"train",.35},{"rain",.2}}}}){var button=Ui.Button(scene.Name,()=>model.ApplyScene(scene));button.Margin=new Thickness(0,0,8,8);presets.Children.Add(button);}var presetRow=new DockPanel{Margin=new Thickness(0,0,0,12)};DockPanel.SetDock(save,Dock.Right);presetRow.Children.Add(save);presetRow.Children.Add(presets);page.Children.Add(presetRow);
+        page.Children.Add(Ui.Text("我的组合",12));Ui.Gap(page,8);RefreshSavedSceneButtons();page.Children.Add(savedSceneButtons);Ui.Gap(page,12);
         var query=new TextBox{ToolTip="搜索声音",Height=38,Margin=new Thickness(0,0,0,10)};System.Windows.Automation.AutomationProperties.SetName(query,"搜索离线声音");var queryWrap=new Grid();queryWrap.Children.Add(query);var placeholder=Ui.Text("搜索声音…",13,"#C2BEC8");placeholder.Margin=new Thickness(12,8,0,0);placeholder.IsHitTestVisible=false;queryWrap.Children.Add(placeholder);query.TextChanged+=(_,_)=>placeholder.Visibility=query.Text.Length==0?Visibility.Visible:Visibility.Collapsed;page.Children.Add(queryWrap);var filters=new WrapPanel();page.Children.Add(filters);var tiles=new WrapPanel();page.Children.Add(tiles);string category="全部";bool activeOnly=false;
         var filterButtons=new System.Collections.Generic.List<Button>();
         void Render(){tiles.Children.Clear();foreach(var c in model.Channels.Where(c=>(category=="全部"||c.Info.Category==category)&&(!activeOnly||c.Enabled)&&(c.Info.Name.Contains(query.Text.Trim(),StringComparison.OrdinalIgnoreCase)||c.Info.Subtitle.Contains(query.Text.Trim(),StringComparison.OrdinalIgnoreCase))))tiles.Children.Add(SoundCard(c));if(tiles.Children.Count==0)tiles.Children.Add(Ui.Text("没有匹配的声音。换个词，或查看全部。"));}
@@ -123,7 +131,7 @@ internal sealed class MainWindow : Window
         form.Children.Add(Ui.Text("声音输出设备",15,"#FCFCFC"));Ui.Gap(form,8);var output=new ComboBox{ItemsSource=model.AvailableDevices,DisplayMemberPath="Name",SelectedValuePath="Id",MaxWidth=480,HorizontalAlignment=HorizontalAlignment.Stretch};output.SetBinding(Selector.SelectedItemProperty,new System.Windows.Data.Binding("SelectedOutputDevice"){Source=model,Mode=System.Windows.Data.BindingMode.OneWay});output.SelectionChanged+=(_,_)=>{if(!model.RefreshingDevices&&output.SelectedItem is OutputDevice device&&device.Id!=model.OutputDeviceId)_ = model.SelectDevice(device.Id);};form.Children.Add(output);Ui.Gap(form,8);form.Children.Add(Ui.Button("刷新设备列表",model.RefreshDevices));Ui.Gap(form,18);form.Children.Add(Ui.Text("桌面背景不透明度",15,"#FCFCFC"));var opacity=Ui.Slider(model,"DesktopOpacity","桌面背景不透明度");opacity.SetBinding(UIElement.IsEnabledProperty,new System.Windows.Data.Binding("DesktopTransparencyAvailable"){Source=model});form.Children.Add(opacity);form.Children.Add(Ui.Text(model.DesktopTransparencyAvailable?"仅调整背景，文字保持清晰。":"此桌面宿主暂不支持透明，使用不透明渐变。",12));Ui.Gap(form,18);
         form.Children.Add(Ui.Button("重新连接所选设备",model.ReconnectDevice));Ui.Gap(form,10);form.Children.Add(Ui.Button("重新嵌入桌面组件",()=>ReattachDesktop?.Invoke()));Ui.Gap(form,24);
         form.Children.Add(Ui.Text("安静的默认设置",15,"#FCFCFC"));Ui.Gap(form,10);form.Children.Add(Ui.Text("启动不自动播放，不随系统开机启动。\n专注结束不响铃、不弹窗；系统睡眠时暂停专注。\n所有收藏、场景和统计保存在此设备。",12));Ui.Gap(form,18);
-        form.Children.Add(Ui.Button("声音来源与许可",()=>ShowLicense()));Ui.Gap(form,10);form.Children.Add(Ui.Text("静隅 0.3 · Windows x64\nHLS/AAC 使用 FFmpeg（LGPLv3+），源码与许可见 docs。\n"+model.DataDirectory,10,"#95919B"));Ui.Gap(form,20);form.Children.Add(Ui.Button("退出静隅",()=>ExitApp?.Invoke()));page.Children.Add(Ui.Panel(form));return new ScrollViewer{Content=page};
+        form.Children.Add(Ui.Button("声音来源与许可",()=>ShowLicense()));Ui.Gap(form,10);form.Children.Add(Ui.Text("静隅 0.3.1 · Windows x64\nHLS/AAC 使用 FFmpeg（LGPLv3+），源码与许可见 docs。\n"+model.DataDirectory,10,"#95919B"));Ui.Gap(form,20);form.Children.Add(Ui.Button("退出静隅",()=>ExitApp?.Invoke()));page.Children.Add(Ui.Panel(form));return new ScrollViewer{Content=page};
     }
     private void ShowLicense(){var text=System.IO.File.ReadAllText(System.IO.Path.Combine(AppContext.BaseDirectory,"SOUND-LICENSES.md"));var w=new Window{Owner=this,Title="声音来源与许可",Width=800,Height=600,Background=Background,WindowStartupLocation=WindowStartupLocation.CenterOwner};w.Content=new TextBox{Text=text,IsReadOnly=true,TextWrapping=TextWrapping.Wrap,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,Margin=new Thickness(18)};w.ShowDialog();}
     private bool Confirm(string title,string message){var w=new Window{Owner=this,Title=title,Width=420,Height=205,ResizeMode=ResizeMode.NoResize,Background=Background,WindowStartupLocation=WindowStartupLocation.CenterOwner};WindowChrome.DarkTitle(w);var p=new StackPanel{Margin=new Thickness(22)};p.Children.Add(Ui.Text(message));Ui.Gap(p,18);var row=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right};var cancel=Ui.Button("取消",()=>w.DialogResult=false);cancel.IsCancel=true;row.Children.Add(cancel);var ok=Ui.Button("确认",()=>w.DialogResult=true,true);ok.Margin=new Thickness(8,0,0,0);row.Children.Add(ok);p.Children.Add(row);w.Content=p;return w.ShowDialog()==true;}

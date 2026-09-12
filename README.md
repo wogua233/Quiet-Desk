@@ -2,6 +2,8 @@
 
 适合工作与学习时使用的 Windows 桌面音乐播放器。采用原生 WPF 界面，以中性深灰与柔粉色为主，支持真正嵌入桌面的紧凑组件。
 
+当前版本 **0.3.1**：修复保存组合后在声音场景页不可见的问题，详见 [修复记录](docs/validation-v031.md)。
+
 ## 主要功能
 
 - **18 种离线氛围音**：雨声、海浪、森林、咖啡馆、白噪声等，最多四路混音，可保存个人声音组合。
@@ -24,7 +26,7 @@
 ./scripts/build.ps1 -Publish
 
 # 运行
-./artifacts/QuietDesk-v0.3.0-win-x64/QuietDesk.exe
+./artifacts/QuietDesk-v0.3.1-win-x64/QuietDesk.exe
 
 # 打包便携版与源码
 ./scripts/package.ps1
