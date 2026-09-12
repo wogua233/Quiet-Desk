@@ -33,12 +33,13 @@ internal static class SceneSelectionVerification
                 Check(model.Channels.Single(c=>c.Info.Id=="rain").Enabled&&Math.Abs(model.Channels.Single(c=>c.Info.Id=="rain").Volume-.31)<.001&&!model.Channels.Single(c=>c.Info.Id=="birds").Enabled&&!model.Playing,"Saved selection did not restore mix quietly");lines.Add("PASS selecting saved choice restores channels and volumes without autoplay");
                 model.SaveScene("保存回归组合");Check(model.Scenes.Count==1&&Walk(window).OfType<Button>().Count(b=>AutomationProperties.GetName(b)=="保存回归组合")==1,"Overwrite duplicated choice");lines.Add("PASS overwrite retains a single choice");
                 model.RenameScene(model.Scenes[0],"重命名回归组合");Check(Choice(window,"保存回归组合")==null&&Choice(window,"重命名回归组合")!=null,"Rename stale choice");
-                model.DeleteScene(model.Scenes[0]);Check(Choice(window,"重命名回归组合")==null,"Deleted choice remains");model.UndoScene();Check(Choice(window,"重命名回归组合")!=null,"Undo absent");lines.Add("PASS rename, delete and undo update choices immediately");
+                var beforeDelete=model.Channels.Where(c=>c.Enabled).ToDictionary(c=>c.Info.Id,c=>c.Volume);Choice(window,"删除组合：重命名回归组合")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Check(model.Scenes.Count==0&&Choice(window,"重命名回归组合")==null,"Deleted choice remains");Check(beforeDelete.All(p=>model.Channels.Any(c=>c.Info.Id==p.Key&&c.Enabled&&c.Volume==p.Value))&&!model.Playing,"Deletion changed playback");Check(Choice(window,"撤销删除")?.IsEnabled==true,"Undo not accessible after last deletion");Choice(window,"撤销删除")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Check(Choice(window,"撤销删除")?.IsEnabled==false,"Undo should be disabled after restoring");Check(Choice(window,"重命名回归组合")!=null,"Undo absent");lines.Add("PASS rename, delete and undo update choices immediately");
                 window.Navigate(2);window.Navigate(0);Check(Choice(window,"重命名回归组合")!=null&&query.Text=="雨","Cached page loses choices or search");lines.Add("PASS page navigation preserves saved choices and search");
             }
             using(var restored=new PlayerModel(folder)){
-                var window=new MainWindow(restored);Check(restored.Scenes.Count==1&&Choice(window,"重命名回归组合")!=null&&!restored.Playing,"Restart loses saved choice");lines.Add("PASS saved choice survives restart without autoplay");
+                var window=new MainWindow(restored);Check(restored.Scenes.Count==1&&Choice(window,"重命名回归组合")!=null&&!restored.Playing,"Restart loses saved choice");lines.Add("PASS saved choice survives restart without autoplay");Choice(window,"删除组合：重命名回归组合")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             }
+            using(var deleted=new PlayerModel(folder)){Check(deleted.Scenes.Count==0,"Deleted scene reappeared after restart");lines.Add("PASS deleting via visible button persists across restart");}
             File.WriteAllLines(output,lines);return 0;
         }catch(Exception e){lines.Add("FAIL "+e);File.WriteAllLines(output,lines);return 1;}
     }

@@ -1,0 +1,7 @@
+PASS saved scene appears immediately without rebuilding sound page
+PASS selecting saved choice restores channels and volumes without autoplay
+PASS overwrite retains a single choice
+PASS rename, delete and undo update choices immediately
+PASS page navigation preserves saved choices and search
+PASS saved choice survives restart without autoplay
+PASS deleting via visible button persists across restart
