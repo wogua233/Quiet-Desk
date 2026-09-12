@@ -116,6 +116,22 @@ internal sealed class PlayerModel : Observable,IDisposable
             else{mediaPaused=false;if(!Playing){Status="媒体已就绪，点击全部恢复后播放。";return;}if(sourceOnline)await OpenSource(sourceLocation,true,MediaTitle,false,sourceFormat,sourceDirect);else{engine.SetMediaReadEnabled(true);engine.SetMediaVolume(MediaVolume);Status="音乐已继续。";}}
         }finally{mediaBusy=false;RefreshMedia();}
     }
+    private bool exportingAudio;
+    public async Task<string?> ExportAudioDiagnostic(string? diagnosticDirectory=null)
+    {
+        if(exportingAudio)return null;if(!Playing){Status="请先播放有问题的电台，再导出诊断。";return null;}
+        exportingAudio=true;
+        object Snapshot()=>new{Master,MediaVolume,Playing,MediaPaused,MediaTitle,device=engine.OutputDescription,mixer=engine.DiagnosticState,channels=Channels.Where(c=>c.Enabled).Select(c=>new{name=c.Info.Name,level=c.Volume}).ToArray()};
+        try{
+            var start=Snapshot();Status="正在采集 5 秒软件输出，请保持音量不变…";
+            var samples=await engine.CaptureOutput();var end=Snapshot();
+            var folder=Path.Combine(diagnosticDirectory??Path.Combine(DataDirectory,"audio-diagnostics"),DateTime.Now.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N")[..6]);var zip=folder+".zip";
+            await Task.Run(()=>{Directory.CreateDirectory(folder);using(var writer=new NAudio.Wave.WaveFileWriter(Path.Combine(folder,"software-output.wav"),NAudio.Wave.WaveFormat.CreateIeeeFloatWaveFormat(44100,2)))writer.WriteSamples(samples,0,samples.Length);File.WriteAllText(Path.Combine(folder,"settings.json"),System.Text.Json.JsonSerializer.Serialize(new{version=typeof(PlayerModel).Assembly.GetName().Version?.ToString(),capturePoint="after mixer and peak limiter; before WASAPI/device",seconds=5,start,end},new System.Text.Json.JsonSerializerOptions{WriteIndented=true}));System.IO.Compression.ZipFile.CreateFromDirectory(folder,zip);});
+            Status="诊断已导出："+zip;return zip;
+        }catch(TimeoutException){Status="采样未完成，请保持连续播放 5 秒后重试。";return null;}
+        catch(Exception e){Status="诊断导出失败："+e.Message;return null;}
+        finally{exportingAudio=false;}
+    }
     private void CaptureFocus(){var now=stopwatch.Elapsed.TotalSeconds;if(Focus.Running)Focus.Advance(now-previous,DateTimeOffset.Now);previous=now;}
     public void ToggleFocus(){CaptureFocus();Focus.Toggle();RefreshFocus();UpdateTick();}
     public void ResetFocus(){CaptureFocus();Focus.Reset();RefreshFocus();UpdateTick();}

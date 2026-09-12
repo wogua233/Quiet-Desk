@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable><ImplicitUsings>disable</ImplicitUsings>
     <ApplicationManifest>../QuietDesk.DesktopProbe/app.manifest</ApplicationManifest>
     <NoWarn>$(NoWarn);WFO0003</NoWarn><AssemblyName>QuietDesk</AssemblyName>
-    <Version>0.3.3</Version>
+    <Version>0.3.4</Version>
     <ApplicationIcon>Assets/quietdesk.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>

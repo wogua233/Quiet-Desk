@@ -17,11 +17,11 @@ internal sealed class LoopSample : ISampleProvider,IDisposable
     internal LoopSample(string path)=>reader=new(path);
     public int Read(float[] buffer,int offset,int count)
     {
-        if(Target==0 && gain<.00001f) {Array.Clear(buffer,offset,count);return count;}
+        if(Target==0 && gain<.00001f) {buffer.AsSpan(offset,count).Clear();return count;}
         var total=0;
         while(total<count) {var n=reader.Read(buffer,offset+total,count-total);if(n==0) {reader.Position=0;n=reader.Read(buffer,offset+total,count-total);if(n==0)break;} total+=n;}
         for(var i=0;i<total;i++) {gain+=(Target-gain)*.00015f;buffer[offset+i]*=gain;}
-        if(total<count)Array.Clear(buffer,offset+total,count-total);
+        if(total<count)buffer.AsSpan(offset+total,count-total).Clear();
         return count;
     }
     public void Dispose()=>reader.Dispose();
@@ -34,6 +34,7 @@ internal sealed class MixBus : ISampleProvider,IDisposable
     private readonly List<string> expired=new(4);
     internal int ActiveCount {get{lock(gate)return loops.Count;}}
     private readonly StereoPeakLimiter limiter=new();
+    private OutputCapture? capture;
     private float[] scratch=new float[8192];private ISampleProvider? media;private float masterGain,mediaGain;
     internal volatile float Master=.45f,MediaLevel=.6f;
     internal volatile bool ReadMedia=true;
@@ -41,11 +42,20 @@ internal sealed class MixBus : ISampleProvider,IDisposable
     internal MixBus(string assets) {this.assets=assets;}
     internal void SetLevel(string id,float value) {lock(gate){targets[id]=value;if(loops.TryGetValue(id,out var loop))loop.Target=value;}}
     internal void SetMedia(ISampleProvider? source) {lock(gate){media=source;mediaGain=0;}}
+    internal object DiagnosticState {get{lock(gate)return new{Master,MediaLevel,masterGain,mediaGain,ReadMedia,hasMedia=media!=null,active=System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(loops,p=>new{id=p.Key,target=p.Value.Target})),targets=new Dictionary<string,float>(targets)};}}
+    internal async Task<float[]> CaptureOutput()
+    {
+        var request=new OutputCapture();lock(gate){if(capture!=null)throw new InvalidOperationException("已有诊断采样正在进行。");capture=request;}
+        try{return await request.Completion.Task.WaitAsync(TimeSpan.FromSeconds(10));}
+        finally{lock(gate){if(ReferenceEquals(capture,request))capture=null;}}
+    }
     public int Read(float[] buffer,int offset,int count)
     {
         lock(gate) {
             if(scratch.Length<count)Array.Resize(ref scratch,count);
-            Array.Clear(buffer,offset,count);
+            // NAudio WaveBuffer may expose byte[] storage as float[]. Array.Clear uses
+            // the runtime byte element size; a typed span clears every float sample.
+            buffer.AsSpan(offset,count).Clear();
             expired.Clear();foreach(var pair in loops)if(pair.Value.Silent)expired.Add(pair.Key);
             foreach(var key in expired){loops[key].Dispose();loops.Remove(key);}
             foreach(var pair in targets){if(loops.Count>=4)break;if(pair.Value>0&&!loops.ContainsKey(pair.Key))loops.Add(pair.Key,new LoopSample(Path.Combine(assets,pair.Key+".wav")){Target=pair.Value});}
@@ -55,10 +65,11 @@ internal sealed class MixBus : ISampleProvider,IDisposable
             if(media!=null && ReadMedia) {var n=media.Read(scratch,0,count);for(int i=0;i<n;i++){mediaGain+=(MediaLevel-mediaGain)*.00015f;buffer[offset+i]+=scratch[i]*mediaGain;}}
             for(int i=0;i<count;i++) {masterGain+=(Master-masterGain)*.0004f;var x=buffer[offset+i]*masterGain;buffer[offset+i]=x;}
             limiter.Process(buffer,offset,count);
+            capture?.Append(buffer,offset,count);
             return count;
         }
     }
-    public void Dispose() {lock(gate){foreach(var loop in loops.Values)loop.Dispose();loops.Clear();}}
+    public void Dispose() {lock(gate){capture?.Completion.TrySetCanceled();capture=null;foreach(var loop in loops.Values)loop.Dispose();loops.Clear();}}
 }
 
 internal sealed class AudioEngine : IDisposable
@@ -70,6 +81,9 @@ internal sealed class AudioEngine : IDisposable
     internal float Volume=.45f;
     internal event Action<string>? Failed;
     internal AudioEngine(string assets,string? selectedDevice=null){bus=new(assets);deviceId=selectedDevice;}
+    internal Task<float[]> CaptureOutput()=>bus.CaptureOutput();
+    internal object DiagnosticState=>bus.DiagnosticState;
+    internal string OutputDescription=>device?.FriendlyName??"尚未打开设备";
     internal void SetMediaReadEnabled(bool value)=>bus.ReadMedia=value;
     internal void SetDevice(string? id){deviceId=id;ReopenOutput();}
     internal void SetLevel(string id,double volume)=>bus.SetLevel(id,(float)volume);
@@ -101,5 +115,5 @@ internal sealed class FloatRing : ISampleProvider
     internal int Buffered {get{lock(gate)return count;}}
     internal FloatRing(WaveFormat format) {WaveFormat=format;samples=new float[format.SampleRate*format.Channels*3];}
     internal int Write(float[] data,int offset,int length) {lock(gate){int n=Math.Min(length,samples.Length-count);for(int i=0;i<n;i++){samples[tail]=data[offset+i];tail=(tail+1)%samples.Length;}count+=n;return n;}}
-    public int Read(float[] data,int offset,int length) {lock(gate){int n=Math.Min(count,length);for(int i=0;i<n;i++){data[offset+i]=samples[head];head=(head+1)%samples.Length;}count-=n;Array.Clear(data,offset+n,length-n);return length;}}
+    public int Read(float[] data,int offset,int length) {lock(gate){int n=Math.Min(count,length);for(int i=0;i<n;i++){data[offset+i]=samples[head];head=(head+1)%samples.Length;}count-=n;data.AsSpan(offset+n,length-n).Clear();return length;}}
 }

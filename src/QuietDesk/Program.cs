@@ -25,7 +25,7 @@ internal static class Program
         var app=new Application {ShutdownMode=ShutdownMode.OnExplicitShutdown};
         app.Resources.MergedDictionaries.Add(new ResourceDictionary{Source=new Uri("/QuietDesk;component/UI/Theme.xaml",UriKind.Relative)});
         var directory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"QuietDesk");
-        PlayerModel? model=null;DesktopHost? desktop=null;Forms.NotifyIcon? tray=null;PerformanceRecorder? recorder=null;
+        PlayerModel? model=null;DesktopHost? desktop=null;Forms.NotifyIcon? tray=null;PerformanceRecorder? recorder=null;LocalAudioDiagnostic? diagnostic=null;
         bool acceptance=args.Contains("--acceptance-run");
         if(acceptance)directory=Path.Combine(Path.GetTempPath(),"QuietDesk-acceptance-"+Guid.NewGuid());
         try {
@@ -40,6 +40,8 @@ internal static class Program
             window.ReattachDesktop=()=>desktop.Attach();
             tray=new Forms.NotifyIcon{Icon=new System.Drawing.Icon(Path.Combine(AppContext.BaseDirectory,"Assets","quietdesk.ico")),Visible=true,Text="静隅 · Quiet Desk",ContextMenuStrip=new Forms.ContextMenuStrip()};
             tray.DoubleClick+=(_,_)=>Open();tray.ContextMenuStrip.Items.Add("打开静隅",null,(_,_)=>Open());tray.ContextMenuStrip.Items.Add("播放 / 暂停",null,(_,_)=>_ = model.TogglePlay());tray.ContextMenuStrip.Items.Add("开始 / 暂停专注",null,(_,_)=>model.ToggleFocus());tray.ContextMenuStrip.Items.Add("重新嵌入桌面",null,(_,_)=>desktop.Attach());tray.ContextMenuStrip.Items.Add("退出",null,(_,_)=>app.Shutdown());
+            int di=Array.IndexOf(args,"--audio-diagnostic-dir");
+            if(di>=0&&di+1<args.Length)diagnostic=new LocalAudioDiagnostic(model,Path.GetFullPath(args[di+1]));
             window.Show();
             if(acceptance){int ci=Array.IndexOf(args,"--channels");int count=ci>=0?int.Parse(args[ci+1]):1;int oi=Array.IndexOf(args,"--out");string report=oi>=0?args[oi+1]:Path.Combine(AppContext.BaseDirectory,"full-app-performance.json");int si=Array.IndexOf(args,"--seconds");int seconds=si>=0?int.Parse(args[si+1]):600;
                 model.ApplyScene(new Scene{Name="性能验收 · 静音播放",Levels=Catalog.Sounds.Take(count).ToDictionary(s=>s.Id,_=>.5)});model.Master=0;_ = model.TogglePlay();window.Hide();
@@ -48,6 +50,6 @@ internal static class Program
             }
             app.Run();return 0;
         }catch(Exception e){Directory.CreateDirectory(directory);File.WriteAllText(Path.Combine(directory,"startup-error.log"),e.ToString());MessageBox.Show("静隅暂时无法启动：\n"+e.Message,"静隅");return 1;}
-        finally{recorder?.Dispose();desktop?.Dispose();tray?.Icon?.Dispose();tray?.Dispose();model?.Dispose();}
+        finally{diagnostic?.Dispose();recorder?.Dispose();desktop?.Dispose();tray?.Icon?.Dispose();tray?.Dispose();model?.Dispose();}
     }
 }
