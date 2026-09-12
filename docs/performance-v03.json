@@ -1,0 +1,29 @@
+{
+  "performance-1": {
+    "status": "complete",
+    "durationSeconds": 600.2836274,
+    "cpuPercent": 0.0732075813733913,
+    "privateWorkingSetPeakBytes": 73158656,
+    "startBytes": 62205952,
+    "endBytes": 60145664,
+    "maxDecoderProcesses": 0
+  },
+  "performance-4": {
+    "status": "complete",
+    "durationSeconds": 600.2226211,
+    "cpuPercent": 0.04686549267878627,
+    "privateWorkingSetPeakBytes": 54034432,
+    "startBytes": 50413568,
+    "endBytes": 53497856,
+    "maxDecoderProcesses": 0
+  },
+  "hls-performance": {
+    "status": "complete",
+    "durationSeconds": 30.458559100000002,
+    "cpuPercent": 0.099555414552557,
+    "privateWorkingSetPeakBytes": 55885824,
+    "startBytes": 50081792,
+    "endBytes": 49741824,
+    "maxDecoderProcesses": 1
+  }
+}

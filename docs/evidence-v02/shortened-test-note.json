@@ -1,0 +1,6 @@
+{
+  "status": "stopped-at-user-request",
+  "reason": "20-minute initial acceptance: single 10 minutes plus four-channel approximately 10 minutes",
+  "fourChannelSampleSeconds": 639.3718829,
+  "at": "2026-09-11T23:34:13.6246634+08:00"
+}

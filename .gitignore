@@ -1,0 +1,6 @@
+.tools/
+**/bin/
+**/obj/
+artifacts/
+dotnet-releases.json
+.vs/

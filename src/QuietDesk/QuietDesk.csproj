@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable><ImplicitUsings>disable</ImplicitUsings>
+    <ApplicationManifest>../QuietDesk.DesktopProbe/app.manifest</ApplicationManifest>
+    <NoWarn>$(NoWarn);WFO0003</NoWarn><AssemblyName>QuietDesk</AssemblyName>
+    <Version>0.3.0</Version>
+    <ApplicationIcon>Assets/quietdesk.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <Content Include="Assets/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../docs/SOUND-LICENSES.md" Link="SOUND-LICENSES.md" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../docs/licenses/*" Link="licenses/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../QuietDesk.DesktopProbe/Native.cs" Link="Desktop/Native.cs" />
+  </ItemGroup>
+</Project>

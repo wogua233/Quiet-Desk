@@ -1,0 +1,68 @@
+[
+  {
+    "Id": "qtfm-267",
+    "Name": "上海经典947",
+    "Url": "https://lhttp.qtfm.cn/live/267/64k.mp3",
+    "Format": "MP3",
+    "Country": "中国",
+    "Tags": "国内直连 · 音乐广播",
+    "DirectConnection": true,
+    "SourcePage": "https://m.qtfm.cn/channels/267/",
+    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
+  },
+  {
+    "Id": "qtfm-1260",
+    "Name": "广东音乐之声",
+    "Url": "https://lhttp.qtfm.cn/live/1260/64k.mp3",
+    "Format": "MP3",
+    "Country": "中国",
+    "Tags": "国内直连 · 音乐广播",
+    "DirectConnection": true,
+    "SourcePage": "https://m.qtfm.cn/channels/1260/",
+    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
+  },
+  {
+    "Id": "qtfm-20192",
+    "Name": "广州金曲音乐广播",
+    "Url": "https://lhttp.qtfm.cn/live/20192/64k.mp3",
+    "Format": "MP3",
+    "Country": "中国",
+    "Tags": "国内直连 · 音乐广播",
+    "DirectConnection": true,
+    "SourcePage": "https://m.qtfm.cn/channels/20192/",
+    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
+  },
+  {
+    "Id": "qtfm-4804",
+    "Name": "怀集音乐之声",
+    "Url": "https://lhttp.qtfm.cn/live/4804/64k.mp3",
+    "Format": "MP3",
+    "Country": "中国",
+    "Tags": "国内直连 · 音乐广播",
+    "DirectConnection": true,
+    "SourcePage": "https://m.qtfm.cn/channels/4804/",
+    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
+  },
+  {
+    "Id": "cnr-zgzs",
+    "Name": "中国之声",
+    "Url": "https://ngcdn001.cnr.cn/live/zgzs/index.m3u8",
+    "Format": "HLS/AAC",
+    "Country": "中国",
+    "Tags": "国内直连 · 央广",
+    "DirectConnection": true,
+    "SourcePage": "https://www.radio.cn/pc-portal/home/index.html?type=x",
+    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
+  },
+  {
+    "Id": "cnr-jjzs",
+    "Name": "经济之声",
+    "Url": "https://ngcdn002.cnr.cn/live/jjzs/index.m3u8",
+    "Format": "HLS/AAC",
+    "Country": "中国",
+    "Tags": "国内直连 · 央广",
+    "DirectConnection": true,
+    "SourcePage": "https://www.radio.cn/pc-portal/home/index.html?type=x",
+    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
+  }
+]

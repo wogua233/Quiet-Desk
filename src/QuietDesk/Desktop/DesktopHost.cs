@@ -1,0 +1,57 @@
+using System;
+using System.IO;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Threading;
+using Microsoft.Win32;
+using Forms=System.Windows.Forms;
+namespace QuietDesk;
+using QuietDesk.DesktopProbe;
+internal sealed class Placement {public int? X{get;set;}public int? Y{get;set;}public bool Locked{get;set;}public string? Edge{get;set;}}
+internal sealed class DesktopHost : IDisposable
+{
+ private HwndSource? source;private readonly Dispatcher dispatcher=Dispatcher.CurrentDispatcher;
+ private readonly DispatcherTimer recovery,hideTimer,showTimer;private readonly Action<string> report;private readonly string placementPath;private Placement placement;
+ private readonly Func<DesktopHost,FrameworkElement> buildCard;private bool disposed,dragging,collapsed,popup,keyboardInteraction;private int attempts;
+ internal bool TransparencyAvailable {get;private set;}=true;internal event Action<bool>? TransparencyChanged;
+ internal int HeightDip{get;private set;}=320;internal nint Handle=>source is{IsDisposed:false}?source.Handle:0;
+ internal bool Collapsed=>collapsed;internal int Attachments{get;private set;}internal bool Locked{get=>placement.Locked;set{placement.Locked=value;Save();}}
+ internal DesktopHost(Action<string> report,string directory,Func<DesktopHost,FrameworkElement> buildCard){this.report=report;this.buildCard=buildCard;placementPath=Path.Combine(directory,"placement.json");try{placement=JsonSerializer.Deserialize<Placement>(File.ReadAllText(placementPath))??new();}catch(Exception e)when(e is IOException or JsonException){placement=new();}
+  hideTimer=new DispatcherTimer{Interval=TimeSpan.FromMilliseconds(800)};hideTimer.Tick+=(_,_)=>{hideTimer.Stop();if(dragging||popup||Mouse.LeftButton==MouseButtonState.Pressed){hideTimer.Start();return;}if(!dragging&&!popup&&Mouse.LeftButton!=MouseButtonState.Pressed&&source?.RootVisual is UIElement root&&!root.IsMouseOver&&!(keyboardInteraction&&root.IsKeyboardFocusWithin))SetCollapsed(true);};
+  showTimer=new DispatcherTimer{Interval=TimeSpan.FromMilliseconds(250)};showTimer.Tick+=(_,_)=>{showTimer.Stop();if(source?.RootVisual is UIElement root&&root.IsMouseOver)SetCollapsed(false);};
+  recovery=new DispatcherTimer(TimeSpan.FromSeconds(3),DispatcherPriority.Background,(_,_)=>CheckParent(),dispatcher);SystemEvents.DisplaySettingsChanged+=DisplayChanged;SystemEvents.SessionSwitch+=SessionChanged;Attach();}
+ internal bool Attach(){var parent=Native.FindDesktopView();if(parent==0){report("尚未找到可见桌面宿主；不会创建悬浮窗。");return false;}ReleaseSource();collapsed=false;var previous=Native.SetThreadDpiAwarenessContext(Native.GetWindowDpiAwarenessContext(parent));
+  try{var scale=Native.GetDpiForWindow(parent)/96.0;int width=(int)Math.Round(220*scale),height=(int)Math.Round(HeightDip*scale);var area=Forms.Screen.FromPoint(new System.Drawing.Point(placement.X??Forms.Screen.PrimaryScreen!.WorkingArea.Right-width-24,placement.Y??80)).WorkingArea;
+   placement.X=Math.Clamp(placement.X??area.Right-width-24,area.Left,Math.Max(area.Left,area.Right-width));placement.Y=Math.Clamp(placement.Y??area.Top+80,area.Top,Math.Max(area.Top,area.Bottom-height));if(placement.Edge=="left")placement.X=area.Left;if(placement.Edge=="right")placement.X=Math.Max(area.Left,area.Right-width);
+   var point=new Native.Point(placement.X.Value,placement.Y.Value);Native.ScreenToClient(parent,ref point);
+   try{source=Create(parent,point,width,height,TransparencyAvailable);}catch(Exception alphaError)when(TransparencyAvailable){TransparencyAvailable=false;TransparencyChanged?.Invoke(false);source=Create(parent,point,width,height,false);report("透明桌面合成不可用，已采用不透明渐变："+alphaError.Message);}
+   if(source.CompositionTarget!=null)source.CompositionTarget.BackgroundColor=TransparencyAvailable?Colors.Transparent:Color.FromRgb(22,22,24);source.RootVisual=BuildRoot();source.AddHook(WindowMessage);Native.SetWindowPos(Handle,0,point.X,point.Y,width,height,0x10|0x40);Attachments++;attempts=0;TransparencyChanged?.Invoke(TransparencyAvailable);report($"已创建真正子窗口 HWND={Handle}; parent={Native.Class(Native.GetParent(Handle))}; DPI={Native.GetDpiForWindow(Handle)}; alpha={source.UsesPerPixelOpacity}");if(placement.Edge!=null)hideTimer.Start();return Native.GetParent(Handle)==parent;
+  }catch(Exception e){report("嵌入失败："+e.Message);ReleaseSource();return false;}finally{Native.SetThreadDpiAwarenessContext(previous);}}
+ private static HwndSource Create(nint parent,Native.Point p,int width,int height,bool alpha)=>new(new HwndSourceParameters("静隅 · 桌面播放器"){ParentWindow=parent,WindowStyle=unchecked((int)0x56000000),ExtendedWindowStyle=0x08000000,PositionX=p.X,PositionY=p.Y,Width=width,Height=height,UsesPerPixelTransparency=alpha});
+ private FrameworkElement BuildRoot(){var root=buildCard(this);BindDrag(root);root.MouseEnter+=(_,_)=>hideTimer.Stop();root.MouseLeave+=(_,_)=>{if(placement.Edge!=null)hideTimer.Start();};root.PreviewKeyDown+=(_,_)=>keyboardInteraction=true;root.ContextMenuOpening+=(_,_)=>{popup=true;hideTimer.Stop();};root.ContextMenuClosing+=(_,_)=>{popup=false;if(placement.Edge!=null)hideTimer.Start();};return root;}
+ internal void Resize(int height){HeightDip=height;if(collapsed||Handle==0)return;if(source?.RootVisual is FrameworkElement root)root.Height=height;PositionWindow(220,height,placement.X??0,placement.Y??0);ClampAndSave(false);}
+ private void PositionWindow(int width,int height,int x,int y){double scale=Native.GetDpiForWindow(Handle)/96.0;var p=new Native.Point(x,y);Native.ScreenToClient(Native.GetParent(Handle),ref p);Native.SetWindowPos(Handle,0,p.X,p.Y,(int)Math.Round(width*scale),(int)Math.Round(height*scale),0x4|0x10);}
+ internal void SetCollapsed(bool value){if(Handle==0||placement.Edge==null||collapsed==value||dragging)return;collapsed=value;hideTimer.Stop();showTimer.Stop();var area=Forms.Screen.FromPoint(new System.Drawing.Point(placement.X??0,placement.Y??0)).WorkingArea;double scale=Native.GetDpiForWindow(Handle)/96.0;
+  if(value){var handle=new Button{Width=8,Height=64,Padding=new Thickness(0),MinHeight=0,Background=Ui.Gradient("#F077AF","#80516C"),BorderThickness=new Thickness(0),ToolTip="展开静隅",Content="",Focusable=true};System.Windows.Automation.AutomationProperties.SetName(handle,"展开静隅桌面组件");handle.MouseEnter+=(_,_)=>showTimer.Start();handle.MouseLeave+=(_,_)=>showTimer.Stop();handle.Click+=(_,_)=>SetCollapsed(false);handle.GotKeyboardFocus+=(_,_)=>SetCollapsed(false);source!.RootVisual=handle;PositionWindow(8,64,placement.Edge=="left"?area.Left:area.Right-(int)Math.Round(8*scale),placement.Y??area.Top);}
+  else{placement.X=placement.Edge=="left"?area.Left:Math.Max(area.Left,area.Right-(int)Math.Round(220*scale));source!.RootVisual=BuildRoot();PositionWindow(220,HeightDip,placement.X.Value,placement.Y??area.Top);}}
+ internal void BindDrag(FrameworkElement root){Native.Point start=new();Native.Rect rect=new();bool down=false,control=false,moved=false;Slider? slider=null;double originalValue=0;var hold=new DispatcherTimer{Interval=TimeSpan.FromMilliseconds(250)};
+  void Begin(){if(!down||Locked||collapsed)return;dragging=true;hideTimer.Stop();root.CaptureMouse();if(slider!=null)slider.Value=originalValue;root.Cursor=Cursors.SizeAll;}
+  hold.Tick+=(_,_)=>{hold.Stop();if(!moved&&Mouse.LeftButton==MouseButtonState.Pressed)Begin();};
+  root.PreviewMouseLeftButtonDown+=(_,e)=>{if(Locked)return;keyboardInteraction=false;down=true;moved=false;control=false;slider=null;Native.GetCursorPos(out start);Native.GetWindowRect(Handle,out rect);for(DependencyObject? item=e.OriginalSource as DependencyObject;item!=null&&item!=root;item=item is Visual?VisualTreeHelper.GetParent(item):LogicalTreeHelper.GetParent(item)){if(item is ButtonBase or Slider or TextBox)control=true;if(item is Slider s)slider=s;}originalValue=slider?.Value??0;if(control)hold.Start();};
+  root.PreviewMouseMove+=(_,e)=>{if(!down)return;Native.GetCursorPos(out var current);double scale=Native.GetDpiForWindow(Handle)/96.0;bool threshold=Math.Abs(current.X-start.X)>SystemParameters.MinimumHorizontalDragDistance*scale||Math.Abs(current.Y-start.Y)>SystemParameters.MinimumVerticalDragDistance*scale;if(!dragging&&threshold){moved=true;hold.Stop();if(!control)Begin();}if(dragging){var p=new Native.Point(rect.Left+current.X-start.X,rect.Top+current.Y-start.Y);Native.ScreenToClient(Native.GetParent(Handle),ref p);Native.SetWindowPos(Handle,0,p.X,p.Y,0,0,0x1|0x4|0x10);e.Handled=true;}};
+  root.PreviewMouseLeftButtonUp+=(_,e)=>{hold.Stop();down=false;if(!dragging)return;dragging=false;root.ReleaseMouseCapture();root.Cursor=Cursors.Arrow;e.Handled=true;ClampAndSave(true);};root.LostMouseCapture+=(_,_)=>{if(dragging&&Mouse.LeftButton!=MouseButtonState.Pressed){dragging=false;down=false;ClampAndSave(true);}};root.Unloaded+=(_,_)=>{hold.Stop();down=false;};}
+ private void ClampAndSave(bool snap){if(Handle==0||collapsed||!Native.GetWindowRect(Handle,out var rect))return;var area=Forms.Screen.FromRectangle(new System.Drawing.Rectangle(rect.Left,rect.Top,rect.Right-rect.Left,rect.Bottom-rect.Top)).WorkingArea;placement.X=Math.Clamp(rect.Left,area.Left,Math.Max(area.Left,area.Right-(rect.Right-rect.Left)));placement.Y=Math.Clamp(rect.Top,area.Top,Math.Max(area.Top,area.Bottom-(rect.Bottom-rect.Top)));if(snap){int threshold=(int)Math.Round(16*Native.GetDpiForWindow(Handle)/96.0);placement.Edge=null;if(Math.Abs(placement.X.Value-area.Left)<=threshold){placement.Edge="left";placement.X=area.Left;}else if(Math.Abs(placement.X.Value-(area.Right-(rect.Right-rect.Left)))<=threshold){placement.Edge="right";placement.X=area.Right-(rect.Right-rect.Left);}}PositionWindow(220,HeightDip,placement.X.Value,placement.Y.Value);Save();if(placement.Edge!=null)hideTimer.Start();}
+ private void Save(){try{var temp=placementPath+".tmp";File.WriteAllText(temp,JsonSerializer.Serialize(placement));File.Move(temp,placementPath,true);}catch(IOException e){report("保存位置失败："+e.Message);}}
+ private nint WindowMessage(nint hwnd,int msg,nint wp,nint lp,ref bool handled){if(msg==0x21){handled=true;return 3;}if(msg==0x2E0)dispatcher.BeginInvoke(()=>{if(!disposed)Attach();});return 0;}
+ private void CheckParent(){if(disposed)return;if(Handle!=0&&Native.IsWindow(Handle)&&Native.GetParent(Handle)==Native.FindDesktopView())return;if(++attempts<=5)Attach();else if(attempts==6)report("桌面恢复已停止自动重试，请点击重新嵌入。");}
+ private void DisplayChanged(object? s,EventArgs e)=>dispatcher.BeginInvoke(()=>{if(!disposed)Attach();});private void SessionChanged(object s,SessionSwitchEventArgs e){if(e.Reason==SessionSwitchReason.SessionUnlock)dispatcher.BeginInvoke(()=>{if(!disposed)Attach();});}
+ internal string Inspect(){if(Handle==0)return "没有嵌入窗口。";Native.GetWindowRect(Handle,out var r);return $"HWND={Handle}; parent={Native.Class(Native.GetParent(Handle))}; alpha={source!.UsesPerPixelOpacity}; collapsed={collapsed}; rect=[{r.Left},{r.Top},{r.Right},{r.Bottom}]";}
+ private void ReleaseSource(){hideTimer.Stop();showTimer.Stop();if(source==null)return;if(!source.IsDisposed){source.RemoveHook(WindowMessage);source.Dispose();}source=null;}
+ public void Dispose(){disposed=true;recovery.Stop();SystemEvents.DisplaySettingsChanged-=DisplayChanged;SystemEvents.SessionSwitch-=SessionChanged;ReleaseSource();}
+ internal static SolidColorBrush Brush(string color){var b=new SolidColorBrush((Color)ColorConverter.ConvertFromString(color));b.Freeze();return b;}
+}

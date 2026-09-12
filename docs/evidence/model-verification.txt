@@ -1,0 +1,7 @@
+PASS four-channel UI model limit
+PASS scene save / clear / restore
+PASS main window layout and render
+PASS library / settings pages construct
+PASS player state restart, no autoplay
+PASS MP3 local decode
+PASS FLAC local decode

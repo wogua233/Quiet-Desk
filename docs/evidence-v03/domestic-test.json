@@ -1,0 +1,56 @@
+[
+  {
+    "Name": "\u4E0A\u6D77\u7ECF\u5178947",
+    "Url": "https://lhttp.qtfm.cn/live/267/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.36364746,
+    "seconds": 3.9804696,
+    "note": "\u672A\u4FEE\u6539VPN\uFF1B\u64CD\u4F5C\u7CFB\u7EDF\u96A7\u9053\u8DEF\u7531\u4ECD\u9700\u7528\u6237\u6838\u9A8C"
+  },
+  {
+    "Name": "\u5E7F\u4E1C\u97F3\u4E50\u4E4B\u58F0",
+    "Url": "https://lhttp.qtfm.cn/live/1260/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.25861126,
+    "seconds": 3.8875972,
+    "note": "\u672A\u4FEE\u6539VPN\uFF1B\u64CD\u4F5C\u7CFB\u7EDF\u96A7\u9053\u8DEF\u7531\u4ECD\u9700\u7528\u6237\u6838\u9A8C"
+  },
+  {
+    "Name": "\u5E7F\u5DDE\u91D1\u66F2\u97F3\u4E50\u5E7F\u64AD",
+    "Url": "https://lhttp.qtfm.cn/live/20192/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.44448853,
+    "seconds": 3.8971058,
+    "note": "\u672A\u4FEE\u6539VPN\uFF1B\u64CD\u4F5C\u7CFB\u7EDF\u96A7\u9053\u8DEF\u7531\u4ECD\u9700\u7528\u6237\u6838\u9A8C"
+  },
+  {
+    "Name": "\u6000\u96C6\u97F3\u4E50\u4E4B\u58F0",
+    "Url": "https://lhttp.qtfm.cn/live/4804/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.67059326,
+    "seconds": 3.6313279,
+    "note": "\u672A\u4FEE\u6539VPN\uFF1B\u64CD\u4F5C\u7CFB\u7EDF\u96A7\u9053\u8DEF\u7531\u4ECD\u9700\u7528\u6237\u6838\u9A8C"
+  },
+  {
+    "Name": "\u4E2D\u56FD\u4E4B\u58F0",
+    "Url": "https://ngcdn001.cnr.cn/live/zgzs/index.m3u8",
+    "Format": "HLS/AAC",
+    "status": "decoded-no-proxy",
+    "peak": 0.54596174,
+    "seconds": 3.6361343,
+    "note": "\u672A\u4FEE\u6539VPN\uFF1B\u64CD\u4F5C\u7CFB\u7EDF\u96A7\u9053\u8DEF\u7531\u4ECD\u9700\u7528\u6237\u6838\u9A8C"
+  },
+  {
+    "Name": "\u7ECF\u6D4E\u4E4B\u58F0",
+    "Url": "https://ngcdn002.cnr.cn/live/jjzs/index.m3u8",
+    "Format": "HLS/AAC",
+    "status": "decoded-no-proxy",
+    "peak": 0.55106956,
+    "seconds": 3.5666088,
+    "note": "\u672A\u4FEE\u6539VPN\uFF1B\u64CD\u4F5C\u7CFB\u7EDF\u96A7\u9053\u8DEF\u7531\u4ECD\u9700\u7528\u6237\u6838\u9A8C"
+  }
+]

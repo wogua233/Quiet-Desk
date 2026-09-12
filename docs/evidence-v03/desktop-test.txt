@@ -1,0 +1,5 @@
+已创建真正子窗口 HWND=29041522; parent=SHELLDLL_DefView; DPI=120; alpha=True
+HWND=29041522; parent=SHELLDLL_DefView; alpha=True; collapsed=False; rect=[2285,80,2560,480]
+PASS collapsed native window is only 8 DIP wide
+PASS expanded native window is 220 DIP wide
+HWND=29041522; parent=SHELLDLL_DefView; alpha=True; collapsed=False; rect=[2285,80,2560,480]

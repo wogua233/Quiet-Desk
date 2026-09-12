@@ -1,0 +1,74 @@
+"""Produce a source-backed report; running tests are never marked passed."""
+from pathlib import Path
+import json,statistics,datetime
+ROOT=Path(__file__).resolve().parents[1]
+rows=[]
+for name,label in [('full-app-single.json','完整应用 · 单路'),('full-app-four.json','完整应用 · 四路 / 十分钟'),('full-app-stability-2h.json','完整应用 · 连续运行（包含实际交互）'),('stability-2h.json','仅音频引擎 · 四路 / 两小时')]:
+    path=ROOT/'artifacts'/name
+    if not path.exists():continue
+    data=json.loads(path.read_text(encoding='utf-8-sig'))
+    all_samples=data.get('samples',[]);samples=[s for s in all_samples if s['seconds']>60]
+    if not samples:continue
+    cpu=statistics.mean(s['cpuPercent'] for s in samples)
+    peak=max(s['privateWorkingSet'] for s in samples)/1024**2
+    latest=samples[-1]['seconds'];first=statistics.median(s['privateWorkingSet'] for s in samples[:min(len(samples),900)])/1024**2
+    last=statistics.median(s['privateWorkingSet'] for s in samples[-min(len(samples),900):])/1024**2
+    state='完成' if data['status']=='complete' else '进行中，未通过最终验收'
+    rows.append(f'| {label} | {state} | {max(0,latest-60)/60:.1f} 分钟 | {cpu:.3f}% | {peak:.1f} MiB | {first:.1f} → {last:.1f} MiB |')
+radio_path=ROOT/'artifacts/radio-verification.json'
+radio=json.loads(radio_path.read_text(encoding='utf-8-sig')) if radio_path.exists() else []
+if not isinstance(radio,list):radio=[]
+tests=[]
+for filename in ('verification.txt','model-verification.txt'):
+    path=ROOT/'artifacts'/filename
+    if path.exists():tests.extend(path.read_text(encoding='utf-8-sig').splitlines())
+passed=sum(line.startswith('PASS') for line in tests)
+failures=[line for line in tests if line.startswith('FAIL')]
+text=f'''# 静隅 0.1 — 验收记录
+
+更新：{datetime.datetime.now().isoformat(timespec='seconds')}（本机时间）
+
+## 构建与功能
+
+- Windows build 26200 / x64；.NET SDK 10.0.401，运行时 10.0.12；NAudio 2.2.1。
+- Release / 自包含 x64 发布构建通过，零警告、零错误。
+- 自动功能验证：{passed} 项通过，{len(failures)} 项失败。原始记录位于 `docs/evidence/verification.txt` 与 `docs/evidence/model-verification.txt`。
+- 覆盖计时完成/暂停/跨日/睡眠间隔、原子保存与损坏恢复、四路限制、场景恢复、启动不自动播放、三秒缓冲上限、网络分段拼接、取消读取、WAV/MP3/FLAC 解码、六种循环边界、混音输出有限且不削波。
+- 主界面、收藏页与设置页构建/布局检查通过；主窗口和电台页面已通过实机截图检查，`docs/main-preview.png` 是 WPF 自身渲染的预览。
+- 素材边界采用一秒交叉淡化。数值连续性检查不等同于逐项主观听感验收。
+
+## 性能
+
+| 测试对象 | 状态 | 预热后时长 | 平均整机 CPU | 私有工作集峰值 | 前/后最多 15 分钟中位数 |
+|---|---|---|---|---|---|
+'''+ '\n'.join(rows)+'''
+
+完整应用测试包含 WPF、真实桌面子窗口和托盘；主窗口先创建再隐藏。初始总音量为零，但录音读取、混音和 WASAPI 输出均实时运行。正常启动不会自动开始测试或写性能日志。
+
+长测约第 16–19 分钟出现实际界面操作：音量由零调整，暂停/恢复过播放，并将四路声音改为三路。固定四路的前十分钟已单独保存为 `full-app-four.json`。后续长测属于包含实际交互和负载变化的连续运行，不冒充固定四路全程播放。
+
+约第 66–72 分钟又出现额外 CPU 开销；栈采样显示 Windows UI Automation 的 `ElementUtil.Invoke` 调用。20:37:45 重置界面验收工具会话后，CPU 回到低占用区间。原始统计保留全部交互和诊断开销，不人为删掉峰值；音频引擎独立长测不受 WPF 界面自动化影响。
+
+单路验收目标：预热 60 秒后持续 600 秒，私有工作集 ≤150 MB、平均 CPU ≤整机 1%。CPU 按逻辑处理器数归一化。这里显示 MiB（1024² 字节），不把私有工作集与私有提交字节或总工作集混用。
+
+两小时测试只有 `status=complete` 后才算计时完成；引擎测试不能替代完整应用测试。长测本身保留采样对象并写 JSON，因此小幅阶梯变化需结合区间中位数判断，不能直接当作泄漏或无泄漏的证明。
+
+## 电台实际解码
+
+每条使用真实返回的直链，读取并检查约三秒非零 PCM，不录制或分发节目内容。记录只代表测试当时的连接与解码结果。
+
+| 电台 | 结果 | 解码测试用时 |
+|---|---|---|
+'''
+for item in radio:text+=f"| {item['Name']} | {'成功' if item['status']=='decoded' else '失败：'+item.get('error','')} | {item['seconds']:.1f} 秒 |\n"
+text+='''
+原始地址、峰值与结果见 `docs/evidence/radio-verification.json`。性能原始 JSON 同样保存在 `docs/evidence/`。在线首版只支持 MP3 直链，目录已按 codec 筛选。目录结果数量不等于已逐项试播数量。
+
+## 保留的实机验证项
+
+用户已确认原型显示桌面、点击和拖动成功。锁定、位置恢复、Explorer 重启、锁屏解锁、不同 DPI 和多显示器拔插的验收细节见 `desktop-acceptance.md`。设备默认切换使用系统通知，物理拔插耳机/音箱仍需实机检查。
+
+不自动重启 Explorer、锁定桌面或修改用户显示设置来冒充完成这些操作。仍为待测的项目不计入通过项。
+'''
+(ROOT/'docs/validation.md').write_text(text,encoding='utf-8')
+print('\n'.join(rows))

@@ -1,0 +1,42 @@
+[
+  {
+    "file": "storm.ogg",
+    "url": "https://raw.githubusercontent.com/rafaelmardojai/blanket/9d229d2be7cb6619135d55ff9e49926e40298686/data/resources/sounds/storm.ogg",
+    "sha256": "7e2a9bee62273b1deb169b6f7a308b70ead6ae450d3f6c75b854a44e4bef7b5a"
+  },
+  {
+    "file": "summer-night.ogg",
+    "url": "https://raw.githubusercontent.com/rafaelmardojai/blanket/9d229d2be7cb6619135d55ff9e49926e40298686/data/resources/sounds/summer-night.ogg",
+    "sha256": "2eb2efb8f5c6733e74dc8546f2ecfac40407e8242a9eed96a72e0fc68790ac6f"
+  },
+  {
+    "file": "coffee-shop.ogg",
+    "url": "https://raw.githubusercontent.com/rafaelmardojai/blanket/9d229d2be7cb6619135d55ff9e49926e40298686/data/resources/sounds/coffee-shop.ogg",
+    "sha256": "397b5d95f06df69ba2989147cf9c37a417b2dc5950c1a16fbe6be6fa372d25ef"
+  },
+  {
+    "file": "train.ogg",
+    "url": "https://raw.githubusercontent.com/rafaelmardojai/blanket/9d229d2be7cb6619135d55ff9e49926e40298686/data/resources/sounds/train.ogg",
+    "sha256": "b749ecf8f04842075c061e2f5572c85b2827d9ecc0670476f3339a9288bb4d71"
+  },
+  {
+    "file": "keyboard.mp3",
+    "url": "https://cdn.freesound.org/previews/561/561102_12517458-hq.mp3",
+    "sha256": "95400d1d7db88206f05d22bc967333ade66a937bdfaa807a8498b45a31daa57f"
+  },
+  {
+    "file": "leaves.mp3",
+    "url": "https://cdn.freesound.org/previews/475/475448_7009965-hq.mp3",
+    "sha256": "32334db89c207004f5f290ec94d775670ffa846f3f63e33da3065bed5346def8"
+  },
+  {
+    "file": "fan.mp3",
+    "url": "https://cdn.freesound.org/previews/546/546174_9453283-hq.mp3",
+    "sha256": "35f20d4df730c480be49515898ae78a2c00c1acaa6c8b2d99aa8766e401fbcbc"
+  },
+  {
+    "file": "library.mp3",
+    "url": "https://cdn.freesound.org/previews/263/263502_2663250-hq.mp3",
+    "sha256": "eaab0d4ba667b2ea60dc570752ae4732c5969a21aaee8c5c501c419fca91e9d0"
+  }
+]

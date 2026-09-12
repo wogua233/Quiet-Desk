@@ -1,0 +1,44 @@
+[
+  {
+    "Name": "\u97F3\u4E50\u4E4B\u58F0",
+    "Url": "https://ytlive.radio.cn/131/radios/20641/index_20641.m3u8?type=1",
+    "status": "failed",
+    "error": "HLS/AAC \u76F4\u64AD\u8FDE\u63A5\u6216\u89E3\u7801\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002",
+    "seconds": 2.0475162
+  },
+  {
+    "Name": "\u7ECF\u5178\u97F3\u4E50\u5E7F\u64AD",
+    "Url": "https://ytlive.radio.cn/131/radios/20642/index_20642.m3u8?type=1",
+    "status": "failed",
+    "error": "HLS/AAC \u76F4\u64AD\u8FDE\u63A5\u6216\u89E3\u7801\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002",
+    "seconds": 0.1041703
+  },
+  {
+    "Name": "\u4E2D\u56FD\u4E4B\u58F0",
+    "Url": "https://ytlive.radio.cn/45/radios/20639/index_20639.m3u8?type=1",
+    "status": "failed",
+    "error": "HLS/AAC \u76F4\u64AD\u8FDE\u63A5\u6216\u89E3\u7801\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002",
+    "seconds": 0.0911117
+  },
+  {
+    "Name": "\u7ECF\u6D4E\u4E4B\u58F0",
+    "Url": "https://ytlive.radio.cn/45/radios/20640/index_20640.m3u8?type=1",
+    "status": "failed",
+    "error": "HLS/AAC \u76F4\u64AD\u8FDE\u63A5\u6216\u89E3\u7801\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002",
+    "seconds": 0.1104632
+  },
+  {
+    "Name": "\u53F0\u6D77\u4E4B\u58F0",
+    "Url": "https://ytlive.radio.cn/45/radios/20643/index_20643.m3u8?type=1",
+    "status": "failed",
+    "error": "HLS/AAC \u76F4\u64AD\u8FDE\u63A5\u6216\u89E3\u7801\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002",
+    "seconds": 0.0924958
+  },
+  {
+    "Name": "\u5927\u6E7E\u533A\u4E4B\u58F0",
+    "Url": "https://ytlive.radio.cn/45/radios/20645/index_20645.m3u8?type=1",
+    "status": "failed",
+    "error": "HLS/AAC \u76F4\u64AD\u8FDE\u63A5\u6216\u89E3\u7801\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002",
+    "seconds": 0.0898889
+  }
+]

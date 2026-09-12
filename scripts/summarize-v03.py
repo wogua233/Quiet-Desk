@@ -1,0 +1,69 @@
+from pathlib import Path
+import json,statistics,datetime,shutil
+root=Path(__file__).resolve().parents[1];src=root/'artifacts/v03';dst=root/'docs/evidence-v03';dst.mkdir(exist_ok=True)
+files=['verify.txt','revision-test.txt','desktop-test.txt','model-test.txt','domestic-test.json','domestic-candidate-failures.json','performance-1.json','performance-4.json','hls-performance.json']
+for name in files:
+ p=src/name
+ if p.exists():shutil.copy2(p,dst/name)
+for p in src.glob('layout-*.png'):shutil.copy2(p,dst/p.name)
+for name in ('main-preview.png','settings-live.jpg','radio-live.jpg'):
+ if (src/name).exists():shutil.copy2(src/name,dst/name)
+lines=[]
+for f in files[:4]:
+ if (src/f).exists():lines.extend((src/f).read_text(encoding='utf-8-sig').splitlines())
+passed=sum(s.startswith('PASS') for s in lines);failed=sum(s.startswith('FAIL') for s in lines)
+rows=[];stats={}
+for name,label in [('performance-1','单路环境声'),('performance-4','四路环境声'),('hls-performance','单路环境声 + HLS（附加短样本）')]:
+ p=src/(name+'.json')
+ if not p.exists():continue
+ d=json.loads(p.read_text(encoding='utf-8-sig'));ss=[x for x in d['samples'] if x['seconds']>60]
+ if not ss:continue
+ prev=60;weights=[]
+ for x in ss:weights.append(max(0,x['seconds']-prev));prev=x['seconds']
+ cpu=sum(x['cpuPercent']*w for x,w in zip(ss,weights))/sum(weights)
+ peak=max(x['privateWorkingSet'] for x in ss);end=ss[-1]['privateWorkingSet'];start=ss[0]['privateWorkingSet'];children=max(x.get('decoderProcesses',0) for x in ss)
+ stats[name]={'status':d['status'],'durationSeconds':ss[-1]['seconds']-60,'cpuPercent':cpu,'privateWorkingSetPeakBytes':peak,'startBytes':start,'endBytes':end,'maxDecoderProcesses':children}
+ rows.append(f'| {label} | {d["status"]} | {ss[-1]["seconds"]-60:.1f} 秒 | {cpu:.3f}% | {peak/2**20:.1f} MiB | {children} |')
+(root/'docs/performance-v03.json').write_text(json.dumps(stats,ensure_ascii=False,indent=2),encoding='utf-8')
+single=stats.get('performance-1',{})
+goal='单路尚未完成。'
+if single.get('status')=='complete':goal='单路实测达到 ≤150 MB 私有工作集与平均整机 CPU ≤1% 的目标。' if single['privateWorkingSetPeakBytes']<=150_000_000 and single['cpuPercent']<=1 else '单路实测未达到全部性能目标。'
+text=f'''# 静隅 0.3 验收记录
+
+更新时间：{datetime.datetime.now().isoformat(timespec='seconds')}（本机时间）
+
+## 交付与回归
+
+Windows 11 x64 build 26200，.NET 10.0.12 / SDK 10.0.401，NAudio 2.2.1；Release 自包含发布，零编译错误。源码保留 18 种离线素材和旧设置兼容，FFmpeg 固定版本、源码、构建配置及许可见 FFMPEG.md。
+
+自动检查 **{passed} 项通过、{failed} 项失败**，原始输出见 evidence-v03。覆盖原有声音解码/接缝/限幅/按需四路、计时与数据恢复，并新增：独立媒体暂停不影响总状态、总恢复保留独立暂停、本地继续不重开文件、暂停时设备切换不自动播放、静音试听解释、有效音效信号、离线国内目录。
+
+## 真实窗口与布局
+
+- 本轮用 Windows computer-use 实际打开主窗口与设置页，点击输出设备列表、系统默认项、试听按钮。按下/焦点有可见粉色边线；试听无输出异常，但没有声学录音证据，不写为主观听感通过。
+- 实机检查发现默认设备空白和内部类型名称，已修正为绑定选中设备对象并显示名称，最终发布版真实窗口已再次确认（settings-live.jpg）。
+- 原生宿主测试确认 SHELLDLL_DefView 真正子窗口，当前 125% DPI，UsesPerPixelOpacity=True；收起窗口宽 8 DIP，展开宽 220 DIP。该证据证明子窗口与命中矩形尺寸，不代表透明观感、悬停或长按拖动已经人工验收。
+- 100%、125%、150%、200% WPF 布局渲染保留在 evidence-v03；这不是系统实际 DPI 切换测试。
+- 主窗口/下拉列表的真实操作已记录；整卡控件长按、左右悬停收起、Win+D 遮挡、透明区域点击、Explorer 重启、锁屏恢复、显示器拔插、全部输出设备与物理拔除仍待实机确认。旧版原型已获用户确认的项目不会冒充新版全通过。
+
+## 电台与音频
+
+附加 HLS 样本结束后，检查未发现残留的 FFmpeg 解码进程。
+
+国内 6 路在最终发布版逐一完成连接与非零 PCM 解码，含 2 路 HLS/AAC。HTTP 禁用应用代理、FFmpeg 清理代理环境变量，但未修改用户 VPN，无法排除系统隧道路由，故标记直连待验证；不承诺全国可用。来源、测试和已剔除 403 候选见 domestic-radio.md。
+
+轻音效默认关闭；主动试听可在全部暂停时输出，遵守总静音；音效使用与播放器相同设备选择。模型测试验证信号幅度与暂停状态，尚未对每个物理设备进行实际听音。断网、快速反复切换与设备拔除的人工操作仍待测。
+
+## 性能短测
+
+| 场景 | 状态 | 预热后时长 | 平均整机 CPU | 私有工作集峰值（含解码器） | 最大解码子进程数 |
+|---|---|---|---|---|---|
+'''+ '\n'.join(rows)+'\n\n'+goal+'''
+
+每组另预热 60 秒。完整 WPF 主窗口创建后隐藏，保留真实桌面卡片与托盘；总音量为零，但录音读取、混音及 WASAPI 输出持续执行。使用独立临时设置，不改变用户组合和统计。
+
+CPU 按逻辑处理器数归一化，并按采样时间加权；内存单位 MiB=1024² 字节。统计主进程及登记的 FFmpeg 子进程；短寿命子进程若在两次采样之间全部启动退出，其消耗可能漏采。单路目标为 ≤150 MB（十进制）和平均整机 CPU ≤1%。所有原始采样与预热保留，不删除峰值。功能回归测试在单路阶段另进程运行，性能计数只归属于被测播放器及其解码器。
+
+按用户要求，本轮为单路十分钟 + 四路十分钟；两小时测试没有执行。0.2 已停止长测的数据作为短测保留在 validation-v02.md，0.1 基线单独保留，不用旧版数据替代本轮。短测不能证明两小时稳定性；尚未完成的条目保留待测。
+'''
+(root/'docs/validation-v03.md').write_text(text,encoding='utf-8');print(f'{passed} PASS / {failed} FAIL');print(json.dumps(stats,ensure_ascii=True))

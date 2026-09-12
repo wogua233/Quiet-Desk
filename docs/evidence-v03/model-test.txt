@@ -1,0 +1,11 @@
+PASS four-channel UI model limit
+PASS scene save / clear / restore
+PASS scene rename / delete / undo
+PASS mute restore / silent feedback default
+PASS queue reorder
+PASS main window layout and render
+PASS library / settings pages construct
+PASS small-layout render 100 / 125 / 150 / 200 percent (not physical DPI switch)
+PASS player state restart, no autoplay
+PASS MP3 local decode
+PASS FLAC local decode

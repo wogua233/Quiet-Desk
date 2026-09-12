@@ -1,0 +1,50 @@
+[
+  {
+    "sound": "rain",
+    "seconds": 59.0,
+    "peak": 0.850006103515625,
+    "seam": 0.01715087890625,
+    "source_sha256": "b84c1daf259a24283be40b7663656d17676df4eb60c1e0332820570db891848a",
+    "output_sha256": "62dd9d2cba29b4b9094f913b0016ed0fc857504fbf49983fbbb3e949e4854c4e"
+  },
+  {
+    "sound": "stream",
+    "seconds": 59.0,
+    "peak": 0.850006103515625,
+    "seam": 0.007476806640625,
+    "source_sha256": "ce372c5db561168636647dd7d4aac39ef1785ae5d415ad0e589186ce1b7c5796",
+    "output_sha256": "d915c0c1a71da7db7e58c5c155165c58d49b4afe8c8b7ccf8717f9d22ca77df9"
+  },
+  {
+    "sound": "waves",
+    "seconds": 59.0,
+    "peak": 0.850006103515625,
+    "seam": 0.0107421875,
+    "source_sha256": "20e1aec7c7542f71645275871650881ea33bc92bd9816b243ea920bb1daa51a0",
+    "output_sha256": "67e428c88b4bfb2bbe387a3a3057150b41381676b17fa9ff88b27c634e64da89"
+  },
+  {
+    "sound": "wind",
+    "seconds": 13.839954648526078,
+    "peak": 0.850006103515625,
+    "seam": 0.00299072265625,
+    "source_sha256": "cfdc81be69cd5f434ebfeb708bdf094725f3052d76691f550ff0e10eee3e32d2",
+    "output_sha256": "d1b4d3630b3470a656b50c17ec51ffcb6c5217223966d7635e0198660dece1e8"
+  },
+  {
+    "sound": "birds",
+    "seconds": 59.0,
+    "peak": 0.850006103515625,
+    "seam": 0.016845703125,
+    "source_sha256": "e59b19c2a377d5835d07e7ec8f8c876b9f40ae7f703738b55d616ef96a1638b2",
+    "output_sha256": "926b6884ab2225bfda5268e870625ff839c9db0cf487868600c1905b9e8b6c78"
+  },
+  {
+    "sound": "fireplace",
+    "seconds": 24.537596371882085,
+    "peak": 0.8499755859375,
+    "seam": 0.008026123046875,
+    "source_sha256": "a6395379a32c2dc30dd870c4571ded4a5311435aacfe354b3a82a9b3ab98620b",
+    "output_sha256": "1fb9f394809463a07e4b21366649279577f6451393504a20b987d17d73f71199"
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "Name": "Ambient Sleeping Pill",
+    "Url": "http://radio.stereoscenic.com/asp-h",
+    "status": "decoded",
+    "peak": 0.37606812,
+    "seconds": 4.3530261
+  },
+  {
+    "Name": "SomaFM Groove Salad (128k MP3)",
+    "Url": "https://ice6.somafm.com/groovesalad-128-mp3",
+    "status": "decoded",
+    "peak": 0.710083,
+    "seconds": 4.3517033
+  },
+  {
+    "Name": "SomaFM Secret Agent (128k MP3)",
+    "Url": "https://ice6.somafm.com/secretagent-128-mp3",
+    "status": "decoded",
+    "peak": 0.9510498,
+    "seconds": 4.3279991
+  },
+  {
+    "Name": "\u0421\u043F\u043E\u043A\u043E\u0439\u043D\u043E\u0435 \u0440\u0430\u0434\u0438\u043E",
+    "Url": "https://listen1.myradio24.com/6262",
+    "status": "decoded",
+    "peak": 0.78842163,
+    "seconds": 5.1125047
+  },
+  {
+    "Name": "Cryosleep",
+    "Url": "http://streams.echoesofbluemars.org:8000/cryosleep",
+    "status": "decoded",
+    "peak": 0.50549316,
+    "seconds": 4.3607419
+  },
+  {
+    "Name": "Total instrumental",
+    "Url": "http://stream.laut.fm/total-instrumental",
+    "status": "decoded",
+    "peak": 0.97250366,
+    "seconds": 4.9517369
+  },
+  {
+    "Name": "SomaFM Drone Zone (128k MP3)",
+    "Url": "https://ice5.somafm.com/dronezone-128-mp3",
+    "status": "decoded",
+    "peak": 0.697937,
+    "seconds": 4.300481
+  },
+  {
+    "Name": "Ambient Modern",
+    "Url": "http://radio.stereoscenic.com/mod-h",
+    "status": "decoded",
+    "peak": 0.47824097,
+    "seconds": 4.9081549
+  }
+]

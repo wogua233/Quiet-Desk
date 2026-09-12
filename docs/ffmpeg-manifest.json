@@ -1,0 +1,8 @@
+{
+  "digest": "sha256:9d4c847189e86276663dcd5a8991cb61e58a53a051e3fa9253f470a62ff639a6",
+  "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-11-13-20/ffmpeg-N-126497-g5b614efc7e-win64-lgpl-shared.zip",
+  "version": "N-126497-g5b614efc7e",
+  "release": "autobuild-2026-09-11-13-20",
+  "name": "ffmpeg-N-126497-g5b614efc7e-win64-lgpl-shared.zip",
+  "source": "https://github.com/FFmpeg/FFmpeg/tree/5b614efc7e"
+}
