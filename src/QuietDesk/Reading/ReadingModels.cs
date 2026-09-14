@@ -48,7 +48,7 @@ internal static class ReadingCatalog
 {
     internal static List<Source> All()=>new[]{
         S("prl","PRL","https://feeds.aps.org/rss/recent/prl.xml","aps"),S("prx","PRX","https://feeds.aps.org/rss/recent/prx.xml","aps"),S("prb","PRB","https://feeds.aps.org/rss/recent/prb.xml","aps"),S("pre","PRE","https://feeds.aps.org/rss/recent/pre.xml","aps"),
-        S("jacs","JACS","https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jacsat","acs"),
+        S("jacs","JACS","https://pubs.acs.org/rss/jacsat/asap.xml","acs"),
         S("nature","Nature","https://www.nature.com/nature.rss","nature"),S("science","Science","https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science","science"),
         S("ncomms","Nature Communications","https://www.nature.com/ncomms.rss","nature"),S("nchem","Nature Chemistry","https://www.nature.com/nchem.rss","nature"),
         S("sciam","Scientific American","https://www.scientificamerican.com/platform/syndication/rss/","news"),S("bbc","BBC World","https://feeds.bbci.co.uk/news/world/rss.xml","news"),S("guardian","The Guardian World","https://www.theguardian.com/world/rss","news")}.ToList();

@@ -58,6 +58,16 @@ internal static class ReadingVerification
         var natureArticle=ReadingContent.Parse(Encoding.UTF8.GetBytes("<rss xmlns:content='http://purl.org/rss/1.0/modules/content/'><channel><item><title>Study</title><link>https://www.nature.com/articles/test</link><content:encoded><![CDATA[<p>Nature Chemistry, Published online: date; doi:example</p>A scientific standfirst with a finding and its significance.]]></content:encoded></item></channel></rss>"),nature).Single();
         Check(natureArticle.Abstract.StartsWith("A scientific")&&!natureArticle.Abstract.Contains("Published online:")&&natureArticle.Basis=="基于导读","official Nature encoded standfirst excludes metadata header");
         Check(new ReadingViewModel(Path.Combine(dir,"default-view")).Recent,"view defaults to recent week");
+        var migratedJacs=new Source{Id="jacs",Name="JACS",Url="https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jacsat",Subscribed=true,Failures=4,NextAttempt=DateTimeOffset.Now.AddHours(2),ETag="old",Modified="old"};
+        var jacsDirectory=Path.Combine(dir,"jacs-migration");var jacsStore=new ReadingStore(jacsDirectory);jacsStore.Put("source","jacs",migratedJacs);
+        using(var migratedService=new ReadingService(jacsDirectory,new ReadingSettings(),start:false)){
+            var actual=migratedService.Sources().Single(s=>s.Id=="jacs");
+            Check(actual.Subscribed&&actual.Url=="https://pubs.acs.org/rss/jacsat/asap.xml"&&actual.ETag==""&&actual.Modified==""&&actual.NextAttempt==null&&actual.Failures==0,"JACS migration preserves subscription and clears stale request/backoff state");
+        }
+        migratedJacs.Url="https://example.org/custom";jacsStore.Put("source","jacs",migratedJacs);
+        using(var customService=new ReadingService(jacsDirectory,new ReadingSettings(),start:false))Check(customService.Sources().Single(s=>s.Id=="jacs").Url==migratedJacs.Url,"JACS migration does not overwrite a customized URL");
+        int fixture=Array.IndexOf(args,"--feed-file");
+        if(fixture>=0){var articles=ReadingContent.Parse(File.ReadAllBytes(args[fixture+1]),ReadingCatalog.All().Single(s=>s.Id=="jacs"));Check(articles.Count>0&&articles.All(a=>a.Doi.StartsWith("10.1021/")&&!a.Doi.Contains("https:"))&&articles.Any(a=>a.HasAbstract),"real JACS feed parses DOI, titles and usable abstracts");}
         File.WriteAllLines(output,lines);return 0;
     }catch(Exception e){lines.Add("FAIL "+e);File.WriteAllLines(output,lines);return 1;}}
 

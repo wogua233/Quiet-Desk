@@ -13,7 +13,12 @@ internal sealed class ReadingService:IDisposable
     private readonly ReadingStore store;private readonly HttpClient http=ReadingContent.Client();private readonly SummaryClient summaries;private readonly CancellationTokenSource stop=new();private readonly SemaphoreSlim sync=new(1),api=new(1),slots=new(2);private DateTimeOffset next=DateTimeOffset.MinValue;private readonly Task loop;private volatile bool autoDue=true;private bool limitHit;private string autoDay="";
     internal ReadingSettings Settings {get;private set;}
     internal event Action? Updated;internal string Status {get;private set;}="阅读已启用";
-    internal ReadingService(string directory,ReadingSettings settings,HttpMessageHandler? summaryHandler=null,bool start=true){summaries=new(summaryHandler);Settings=Clone(settings);store=new(directory);foreach(var s in ReadingCatalog.All())if(!store.Load<Source>("source").Any(x=>x.Id==s.Id))store.Put("source",s.Id,s);store.MigrateAbstractMode();store.Prune();loop=start?Task.Run(Loop):Task.CompletedTask;}
+    internal ReadingService(string directory,ReadingSettings settings,HttpMessageHandler? summaryHandler=null,bool start=true){summaries=new(summaryHandler);Settings=Clone(settings);store=new(directory);foreach(var s in ReadingCatalog.All()){
+var existing=store.Find<Source>("source",s.Id);
+if(existing==null)store.Put("source",s.Id,s);
+else if(s.Id=="jacs"&&existing.Url=="https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jacsat"){
+existing.Url=s.Url;existing.ETag="";existing.Modified="";existing.NextAttempt=null;existing.Failures=0;existing.ParserVersion=0;existing.Status="订阅地址已更新，等待获取";store.Put("source",existing.Id,existing);
+}}store.MigrateAbstractMode();store.Prune();loop=start?Task.Run(Loop):Task.CompletedTask;}
     private static ReadingSettings Clone(ReadingSettings s)=>JsonSerializer.Deserialize<ReadingSettings>(JsonSerializer.Serialize(s))!;
     internal static ReadingSettings LoadSettings(string directory){
         ReadingSettings settings;var path=Path.Combine(directory,"reading-settings.json");
