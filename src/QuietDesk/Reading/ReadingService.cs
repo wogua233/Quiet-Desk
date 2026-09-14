@@ -30,7 +30,7 @@ existing.Url=s.Url;existing.ETag="";existing.Modified="";existing.NextAttempt=nu
     internal void Configure(ReadingSettings settings){Settings=Clone(settings);autoDue=true;SaveSettings(Directory.GetParent(store.DirectoryPath)!.FullName,settings);Changed();}
     internal List<Source> Sources()=>store.Load<Source>("source");
     internal List<Article> Articles()=>store.Load<Article>("article");
-    internal List<Article> Query(string day,string source,bool discovered,bool favorites,int offset,bool unread=false,bool recent=false)=>store.Query(day,source,discovered,favorites,offset,unread,recent);
+    internal List<Article> Query(string day,string source,bool discovered,bool favorites,int offset,bool unread=false,bool recent=false,ArticleOrder order=ArticleOrder.Newest)=>store.Query(day,source,discovered,favorites,offset,unread,recent,order);
     internal string LatestDay(string source)=>store.LatestDay(source);
     internal void SaveSource(Source s){store.Put("source",s.Id,s);next=DateTimeOffset.MinValue;Changed();}
     internal void RemoveSource(Source s){s.Subscribed=false;SaveSource(s);if(s.Id.StartsWith("custom-"))store.Delete("source",s.Id);}

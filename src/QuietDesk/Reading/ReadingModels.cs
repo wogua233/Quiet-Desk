@@ -44,8 +44,10 @@ public sealed class Article
     public string DisplayMeta=>$"{SourceName} · {PublishedDay??"日期待确认"}";
     public string Display=>$"{DisplayTitle}\n{DisplayMeta} · {Status}";
 }
+internal enum ArticleOrder { Newest, Oldest, Journal }
 internal static class ReadingCatalog
 {
+    internal const string SubscribedFilter="@subscribed";
     internal static List<Source> All()=>new[]{
         S("prl","PRL","https://feeds.aps.org/rss/recent/prl.xml","aps"),S("prx","PRX","https://feeds.aps.org/rss/recent/prx.xml","aps"),S("prb","PRB","https://feeds.aps.org/rss/recent/prb.xml","aps"),S("pre","PRE","https://feeds.aps.org/rss/recent/pre.xml","aps"),
         S("jacs","JACS","https://pubs.acs.org/rss/jacsat/asap.xml","acs"),

@@ -11,7 +11,7 @@ namespace QuietDesk.Reading;
 internal sealed class ReadingViewModel:IDisposable
 {
     internal DateTime SelectedDay {get;set;}=DateTime.Today;internal int SelectedPage {get;set;}
-    internal string SourceId="",SelectedId="";internal bool Discovered,Favorites,Unread;internal bool Recent=true;internal int Offset;internal double ScrollOffset;
+    internal string SourceId=ReadingCatalog.SubscribedFilter,SelectedId="";internal bool SortByJournal;internal bool NewestFirst=true;internal bool Discovered,Favorites,Unread;internal bool Recent=true;internal int Offset;internal double ScrollOffset;
     internal string Directory {get;}internal ReadingSettings Settings {get;private set;}internal ReadingService? Service {get;private set;}internal string Error {get;private set;}="";
     internal ReadingViewModel(string directory){Directory=directory;Settings=ReadingService.LoadSettings(directory);if(Settings.Enabled)try{Service=new(System.IO.Path.Combine(directory,"reading"),Settings);}catch(Exception e){Error="阅读数据暂不可用："+e.Message;}}
     internal void Enable(){try{Service??=new(System.IO.Path.Combine(Directory,"reading"),Settings);Settings.Enabled=true;ReadingService.SaveSettings(Directory,Settings);Error="";}catch(Exception e){Error="无法启用阅读："+e.Message;}}
@@ -102,10 +102,20 @@ internal sealed class ReadingView:UserControl
         filters.Children.Add(day);
         filters.Children.Add(ActionButton("后一天",()=>ChangeDay(1)));
         filters.Children.Add(ActionButton("今天",()=>{model.SelectedDay=DateTime.Today;model.Recent=false;ResetFilter();}));
-        var source=new ComboBox{Width=180,ItemsSource=new[]{new Source{Id="",Name="全部刊物"}}.Concat(model.Service!.Sources()).ToList(),SelectedValuePath="Id",SelectedValue=model.SourceId,Margin=new Thickness(0,0,8,8)};
+        var source=new ComboBox{Width=180,ItemsSource=new[]{new Source{Id=ReadingCatalog.SubscribedFilter,Name="订阅刊物"},new Source{Id="",Name="全部刊物"}}.Concat(model.Service!.Sources()).ToList(),SelectedValuePath="Id",SelectedValue=model.SourceId,Margin=new Thickness(0,0,8,8)};
         source.SelectionChanged+=(_,_)=>{model.SourceId=(source.SelectedItem as Source)?.Id??"";model.Offset=0;model.SelectedId="";selected=null;model.ScrollOffset=0;RefreshList();};filters.Children.Add(source);
         var mode=new ComboBox{Width=140,ItemsSource=new[]{"按发表日期","按发现日期"},SelectedIndex=model.Discovered?1:0,Margin=new Thickness(0,0,8,8),ToolTip="今天：今日发表／今日发现；往日：对应日期的发表／发现记录"};
         mode.SelectionChanged+=(_,_)=>{model.Discovered=mode.SelectedIndex==1;model.Offset=0;model.SelectedId="";selected=null;RefreshList();};filters.Children.Add(mode);
+        var order=new ComboBox{Width=118,ItemsSource=new[]{"按时间排序","按期刊名排序"},SelectedIndex=model.SortByJournal?1:0,Margin=new Thickness(0,0,8,8)};
+        var direction=new ComboBox{Width=136,ItemsSource=new[]{"更新的在前","更老的在前"},SelectedIndex=model.NewestFirst?0:1,IsEnabled=!model.SortByJournal,Margin=new Thickness(0,0,8,8)};
+        System.Windows.Automation.AutomationProperties.SetName(order,"文章排序");
+        System.Windows.Automation.AutomationProperties.SetName(direction,"时间顺序");
+        order.ToolTip="期刊名按 A–Z 排列，同一期刊内按时间从新到旧";
+        direction.ToolTip="时间跟随发表／发现日期选项；日期未知的文章排在最后";
+        void Resort(){model.Offset=0;model.ScrollOffset=0;model.SelectedId="";selected=null;RefreshList();}
+        order.SelectionChanged+=(_,_)=>{model.SortByJournal=order.SelectedIndex==1;direction.IsEnabled=!model.SortByJournal;Resort();};
+        direction.SelectionChanged+=(_,_)=>{model.NewestFirst=direction.SelectedIndex==0;Resort();};
+        filters.Children.Add(order);filters.Children.Add(direction);
         filters.Children.Add(Toggle("收藏（全部日期）",model.Favorites,v=>model.Favorites=v));filters.Children.Add(Toggle("仅未读",model.Unread,v=>model.Unread=v));
         filters.Children.Add(ActionButton("刷新订阅",async()=>{status.Text="正在检查订阅…";await model.Service.Refresh();}));
         DockPanel.SetDock(filters,Dock.Top);outer.Children.Add(filters);
@@ -149,12 +159,12 @@ internal sealed class ReadingView:UserControl
     {
         if(list==null||model.Service==null||page!=0)return;
         var id=selected?.Id??model.SelectedId;var scroll=Child<ScrollViewer>(list);double offset=scroll?.VerticalOffset??model.ScrollOffset;
-        var articles=model.Service.Query(model.SelectedDay.ToString("yyyy-MM-dd"),model.SourceId,model.Discovered,model.Favorites,model.Offset,model.Unread,model.Recent);
+        var articles=model.Service.Query(model.SelectedDay.ToString("yyyy-MM-dd"),model.SourceId,model.Discovered,model.Favorites,model.Offset,model.Unread,model.Recent,model.SortByJournal?ArticleOrder.Journal:model.NewestFirst?ArticleOrder.Newest:ArticleOrder.Oldest);
         // Keep the actively read item visible until the user changes a filter.
-        if(model.Unread&&selected!=null&&selected.Id==model.SelectedId&&!articles.Any(a=>a.Id==selected.Id))articles.Insert(0,selected);
+        if(model.Unread&&selected!=null&&(model.SourceId!=ReadingCatalog.SubscribedFilter||model.Service.Sources().Any(s=>s.Id==selected.SourceId&&s.Subscribed))&&selected.Id==model.SelectedId&&!articles.Any(a=>a.Id==selected.Id))articles.Insert(0,selected);
         refreshing=true;list.ItemsSource=articles;var match=articles.FirstOrDefault(a=>a.Id==id);list.SelectedItem=match;refreshing=false;
         var subscribed=model.Service.Sources().Where(s=>s.Subscribed).ToList();
-        var relevant=subscribed.Where(s=>model.SourceId.Length==0||s.Id==model.SourceId).ToList();
+        var relevant=subscribed.Where(s=>model.SourceId.Length==0||model.SourceId==ReadingCatalog.SubscribedFilter||s.Id==model.SourceId).ToList();
         if(rangeLabel!=null)rangeLabel.Text=model.Favorites?"全部日期的收藏":(model.Recent?$"{model.SelectedDay.AddDays(-6):yyyy-MM-dd} 至 {model.SelectedDay:yyyy-MM-dd}":$"{model.SelectedDay:yyyy-MM-dd}")+" · "+(model.Discovered?"按发现日期":"按发表日期")+" · 本页 "+articles.Count+" 篇";
         string latest=articles.Count==0?model.Service.LatestDay(model.SourceId):"";
         empty!.Text=articles.Count>0?"":relevant.Count==0?"尚未订阅所选刊物。\n请在“订阅”中勾选。":relevant.Any(s=>s.Failures>0)?"当前筛选没有条目，来源更新失败。\n请在“订阅”查看原因。":latest.Length>0?$"当前日期或筛选没有文章。\n最近收录的发表日期：{latest}\n请切换“最近7天”或输入该日期。":"尚未收录文章。\n刷新订阅后查看连接状态；无更新不代表获取失败。";
