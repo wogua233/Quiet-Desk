@@ -14,7 +14,9 @@ public sealed class ReadingSettings
     public string AbstractConsent {get;set;}="";
     public int AbstractModeVersion {get;set;}
     public bool Automatic {get;set;}
-    public int DailyLimit {get;set;}=10;
+    public int DailyLimit {get;set;}=10; // Legacy settings only; not an AI limit.
+    public bool Scheduled {get;set;}
+    public string ScheduledTime {get;set;}="";
     [System.Text.Json.Serialization.JsonIgnore]
     public string Key {get {try{return ProtectedKey.Length==0?"":Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(ProtectedKey),null,DataProtectionScope.CurrentUser));}catch{return "";}}}
     public void SetKey(string key)=>ProtectedKey=key.Length==0?"":Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(key),null,DataProtectionScope.CurrentUser));
@@ -34,14 +36,20 @@ public sealed class Article
     public string ChineseTitle {get;set;}="";public string Url {get;set;}="";public string Doi {get;set;}="";public string Abstract {get;set;}="";
     public string? PublishedDay {get;set;} public string DateEvidence {get;set;}="";public DateTimeOffset Discovered {get;set;}=DateTimeOffset.Now;
     public bool Read {get;set;} public bool Favorite {get;set;} public string Summary {get;set;}="";
-    public string SummaryKey {get;set;}="";public string Status {get;set;}="待生成";
+    public string SummaryKey {get;set;}="";public string Status {get;set;}="待翻译";
+    public string ChineseAbstract {get;set;}="";
+    public string AiContentKey {get;set;}="";
+    public string AiContextKey {get;set;}="";
+    public string FeedHash {get;set;}="";
+
     public string Basis {get;set;}="基于摘要";
     public string AbstractStatus {get;set;}="";
     [System.Text.Json.Serialization.JsonIgnore]
     public bool HasAbstract=>Abstract.Length>=100&&!Abstract.TrimEnd().EndsWith("…")&&!Abstract.TrimEnd().EndsWith("...");
 
     public string DisplayTitle=>(Read?"":"● ")+(Favorite?"★ ":"")+(ChineseTitle.Length>0?ChineseTitle:Title);
-    public string DisplayMeta=>$"{SourceName} · {PublishedDay??"日期待确认"}";
+    public string EnglishSubtitle=>ChineseTitle.Length>0?Title:"";
+    public string DisplayMeta=>$"{SourceName} · {PublishedDay??"发表日期未知"}";
     public string Display=>$"{DisplayTitle}\n{DisplayMeta} · {Status}";
 }
 internal enum ArticleOrder { Newest, Oldest, Journal }
@@ -57,4 +65,40 @@ internal static class ReadingCatalog
     private static Source S(string id,string name,string url,string publisher)=>new(){Id=id,Name=name,Url=url,Publisher=publisher};
     internal static string Hash(string s)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(s)));
     internal static bool Http(string s)=>Uri.TryCreate(s,UriKind.Absolute,out var u)&&(u.Scheme is "https" or "http")&&string.IsNullOrEmpty(u.UserInfo);
+}
+
+
+internal sealed class AiJob
+{
+    public string Id {get;set;}="";
+    public string ArticleId {get;set;}="";
+    public string State {get;set;}="等待";
+    public bool SubscriptionOnly {get;set;}=true;
+    public int Attempts {get;set;}
+    public DateTimeOffset? NextAttempt {get;set;}
+}
+internal sealed class AiQueueState
+{
+    public string Day {get;set;}="";
+    public string BatchId {get;set;}="";
+    public bool Paused {get;set;}
+    public DateTimeOffset? RetryNotBefore {get;set;}
+}
+internal sealed class AiUsage
+{
+    public string Id {get;set;}=Guid.NewGuid().ToString("N");
+    public string BatchId {get;set;}="";
+    public string ArticleId {get;set;}="";
+    public string Model {get;set;}="";
+    public DateTimeOffset At {get;set;}=DateTimeOffset.Now;
+    public long? InputTokens {get;set;}
+    public long? OutputTokens {get;set;}
+    public long? CachedTokens {get;set;}
+    public string State {get;set;}="已发出";
+}
+internal sealed class BilingualResult
+{
+    public string ChineseTitle {get;set;}="";
+    public string ChineseAbstract {get;set;}="";
+    public string ChineseSummary {get;set;}="";
 }

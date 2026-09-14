@@ -11,7 +11,7 @@ namespace QuietDesk.Reading;
 internal sealed class ReadingViewModel:IDisposable
 {
     internal DateTime SelectedDay {get;set;}=DateTime.Today;internal int SelectedPage {get;set;}
-    internal string SourceId=ReadingCatalog.SubscribedFilter,SelectedId="";internal bool SortByJournal;internal bool NewestFirst=true;internal bool Discovered,Favorites,Unread;internal bool Recent=true;internal int Offset;internal double ScrollOffset;
+    internal string SourceId=ReadingCatalog.SubscribedFilter,SelectedId="";internal bool SortByJournal;internal bool NewestFirst=true;internal bool Discovered,Favorites,Unread;internal bool Recent=true;internal bool FiltersExpanded;internal int Offset;internal double ScrollOffset;
     internal string Directory {get;}internal ReadingSettings Settings {get;private set;}internal ReadingService? Service {get;private set;}internal string Error {get;private set;}="";
     internal ReadingViewModel(string directory){Directory=directory;Settings=ReadingService.LoadSettings(directory);if(Settings.Enabled)try{Service=new(System.IO.Path.Combine(directory,"reading"),Settings);}catch(Exception e){Error="阅读数据暂不可用："+e.Message;}}
     internal void Enable(){try{Service??=new(System.IO.Path.Combine(Directory,"reading"),Settings);Settings.Enabled=true;ReadingService.SaveSettings(Directory,Settings);Error="";}catch(Exception e){Error="无法启用阅读："+e.Message;}}
@@ -24,7 +24,7 @@ internal sealed class ReadingView:UserControl
     private readonly ReadingViewModel model;
     private readonly DockPanel shell=new();
     private readonly ContentControl body=new();
-    private readonly TextBlock status=Ui.Text("",12);
+    private readonly TextBlock status=Ui.Text("",12);private readonly TextBlock queueStatus=Ui.Text("",12);
     private readonly System.Collections.Generic.Dictionary<int,Button> tabs=new();
     private int page;
     private bool loaded,refreshing,narrowDetail;
@@ -46,23 +46,27 @@ internal sealed class ReadingView:UserControl
         var header=new DockPanel{Margin=new Thickness(0,0,0,16)};
         var settings=Ui.Button("阅读设置",()=>Show(3),feedback:false);
         settings.Content=Icons.Create("settings",17,"#C2BEC8");
-        settings.ToolTip="阅读设置";DockPanel.SetDock(settings,Dock.Right);header.Children.Add(settings);
-        var navigation=new StackPanel{Orientation=Orientation.Horizontal};
+        System.Windows.Automation.AutomationProperties.SetName(settings,"阅读设置");settings.ToolTip="阅读设置";DockPanel.SetDock(settings,Dock.Right);header.Children.Add(settings);
+        var navigation=new WrapPanel();
         foreach(var pair in new[]{("文章",0),("订阅",1)})
         {
             var button=Ui.Button(pair.Item1,()=>Show(pair.Item2),feedback:false);
             button.Margin=new Thickness(0,0,8,0);tabs[pair.Item2]=button;navigation.Children.Add(button);
         }
+        navigation.Children.Add(ActionButton("立即开始",async()=>await StartBatch(false)));
+        navigation.Children.Add(ActionButton("暂停队列",()=>model.Service?.PauseQueue()));
         header.Children.Add(navigation);DockPanel.SetDock(header,Dock.Top);shell.Children.Add(header);
-        status.Margin=new Thickness(4,10,4,0);DockPanel.SetDock(status,Dock.Bottom);shell.Children.Add(status);shell.Children.Add(body);
-        Loaded+=(_,_)=>{loaded=true;if(model.Service!=null)model.Service.Updated+=Update;Show(page);};
-        Unloaded+=(_,_)=>{SavePosition();loaded=false;if(model.Service!=null)model.Service.Updated-=Update;if(list!=null)list.ItemsSource=null;body.Content=null;selected=null;};
+        status.Margin=new Thickness(4,10,4,0);DockPanel.SetDock(status,Dock.Bottom);shell.Children.Add(status);queueStatus.Margin=new Thickness(4,8,4,0);DockPanel.SetDock(queueStatus,Dock.Bottom);shell.Children.Add(queueStatus);shell.Children.Add(body);
+        Loaded+=(_,_)=>{loaded=true;if(model.Service!=null){model.Service.Updated+=Update;model.Service.QueueUpdated+=UpdateQueue;}Show(page);};
+        Unloaded+=(_,_)=>{SavePosition();loaded=false;if(model.Service!=null){model.Service.Updated-=Update;model.Service.QueueUpdated-=UpdateQueue;}if(list!=null)list.ItemsSource=null;body.Content=null;selected=null;};
         SizeChanged+=(_,_)=>Adapt();
     }
+    private void UpdateQueue(){if(!loaded)return;Dispatcher.BeginInvoke(()=>{if(loaded)queueStatus.Text=model.Service==null?"":model.Service.ScheduleStatus+"\n"+model.Service.QueueStatus;});}
+    private async Task StartBatch(bool refresh){if(model.Service==null)return;try{await model.Service.StartNow(refresh);}catch(Exception e){status.Text=e.Message;}UpdateQueue();}
     private void Update()
     {
         if(!loaded)return;
-        Dispatcher.BeginInvoke(()=>{if(!loaded)return;status.Text=model.Service?.Status??"";
+        Dispatcher.BeginInvoke(()=>{if(!loaded)return;status.Text=model.Service?.Status??"";UpdateQueue();
             if(page==0)RefreshList();else if(page==1)RefreshSources();});
     }
     private StackPanel Stack()=>new(){Margin=new Thickness(0,4,0,8)};
@@ -78,11 +82,11 @@ internal sealed class ReadingView:UserControl
         if(model.Service==null)
         {
             var welcome=Stack();welcome.Children.Add(Ui.Text("留一点时间，读值得读的内容。",24,"#FCFCFC"));Ui.Gap(welcome);
-            welcome.Children.Add(Ui.Text("选择期刊，阅读原始摘要与中文总结。不会自动订阅或播放通知声。"));
-            Ui.Gap(welcome);welcome.Children.Add(Ui.Button("启用阅读并选择刊物",()=>{model.Enable();if(model.Service!=null)model.Service.Updated+=Update;Show(1);},feedback:false));
+            welcome.Children.Add(Ui.Text("首次启用仅订阅 JACS，可随时调整。阅读双语摘要与中文总结，不播放通知声。"));
+            Ui.Gap(welcome);welcome.Children.Add(Ui.Button("启用阅读并选择刊物",()=>{model.Enable();if(model.Service!=null){model.Service.Updated+=Update;model.Service.QueueUpdated+=UpdateQueue;}Show(1);},feedback:false));
             welcome.Children.Add(Ui.Text(model.Error,12));body.Content=welcome;return;
         }
-        body.Content=target switch{1=>Subscriptions(),3=>Settings(),_=>Articles()};status.Text=model.Service.Status;
+        body.Content=target switch{1=>Subscriptions(),3=>Settings(),_=>Articles()};status.Text=model.Service.Status;UpdateQueue();
     }
     private Button ActionButton(string title,Action action){var b=Ui.Button(title,action,feedback:false);b.Margin=new Thickness(0,0,8,8);b.VerticalAlignment=VerticalAlignment.Top;return b;}
     private CheckBox Toggle(string label,bool value,Action<bool> change)
@@ -93,9 +97,10 @@ internal sealed class ReadingView:UserControl
     private UIElement Articles()
     {
         var outer=new DockPanel();
-        var filters=new WrapPanel{Margin=new Thickness(0,0,0,8)};
+        var filterArea=new StackPanel();var primaryFilters=new WrapPanel();
+        var filters=new WrapPanel{Margin=new Thickness(0,8,0,8)};
         var range=new ComboBox{Width=124,ItemsSource=new[]{"最近7天","指定日期"},SelectedIndex=model.Recent?0:1,Margin=new Thickness(0,0,8,8)};
-        range.SelectionChanged+=(_,_)=>{model.Recent=range.SelectedIndex==0;ResetFilter();};filters.Children.Add(range);
+        range.SelectionChanged+=(_,_)=>{model.Recent=range.SelectedIndex==0;ResetFilter();};primaryFilters.Children.Add(range);
         var previous=ActionButton("前一天",()=>ChangeDay(-1));previous.ToolTip="查看前一天";filters.Children.Add(previous);
         var day=Input(model.SelectedDay.ToString("yyyy-MM-dd"));day.Width=142;day.Height=42;day.VerticalAlignment=VerticalAlignment.Top;day.Margin=new Thickness(0,0,8,8);day.ToolTip="日期（yyyy-MM-dd），回车确认";
         day.KeyDown+=(_,e)=>{if(e.Key==Key.Enter){if(DateTime.TryParseExact(day.Text,"yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.None,out var parsed)){model.SelectedDay=parsed;model.Recent=false;ResetFilter();}else status.Text="请按 yyyy-MM-dd 输入日期。";}};
@@ -103,7 +108,7 @@ internal sealed class ReadingView:UserControl
         filters.Children.Add(ActionButton("后一天",()=>ChangeDay(1)));
         filters.Children.Add(ActionButton("今天",()=>{model.SelectedDay=DateTime.Today;model.Recent=false;ResetFilter();}));
         var source=new ComboBox{Width=180,ItemsSource=new[]{new Source{Id=ReadingCatalog.SubscribedFilter,Name="订阅刊物"},new Source{Id="",Name="全部刊物"}}.Concat(model.Service!.Sources()).ToList(),SelectedValuePath="Id",SelectedValue=model.SourceId,Margin=new Thickness(0,0,8,8)};
-        source.SelectionChanged+=(_,_)=>{model.SourceId=(source.SelectedItem as Source)?.Id??"";model.Offset=0;model.SelectedId="";selected=null;model.ScrollOffset=0;RefreshList();};filters.Children.Add(source);
+        source.SelectionChanged+=(_,_)=>{model.SourceId=(source.SelectedItem as Source)?.Id??"";model.Offset=0;model.SelectedId="";selected=null;model.ScrollOffset=0;RefreshList();};primaryFilters.Children.Add(source);
         var mode=new ComboBox{Width=140,ItemsSource=new[]{"按发表日期","按发现日期"},SelectedIndex=model.Discovered?1:0,Margin=new Thickness(0,0,8,8),ToolTip="今天：今日发表／今日发现；往日：对应日期的发表／发现记录"};
         mode.SelectionChanged+=(_,_)=>{model.Discovered=mode.SelectedIndex==1;model.Offset=0;model.SelectedId="";selected=null;RefreshList();};filters.Children.Add(mode);
         var order=new ComboBox{Width=118,ItemsSource=new[]{"按时间排序","按期刊名排序"},SelectedIndex=model.SortByJournal?1:0,Margin=new Thickness(0,0,8,8)};
@@ -117,8 +122,11 @@ internal sealed class ReadingView:UserControl
         direction.SelectionChanged+=(_,_)=>{model.NewestFirst=direction.SelectedIndex==0;Resort();};
         filters.Children.Add(order);filters.Children.Add(direction);
         filters.Children.Add(Toggle("收藏（全部日期）",model.Favorites,v=>model.Favorites=v));filters.Children.Add(Toggle("仅未读",model.Unread,v=>model.Unread=v));
-        filters.Children.Add(ActionButton("刷新订阅",async()=>{status.Text="正在检查订阅…";await model.Service.Refresh();}));
-        DockPanel.SetDock(filters,Dock.Top);outer.Children.Add(filters);
+        primaryFilters.Children.Add(ActionButton("刷新并翻译总结",async()=>await StartBatch(true)));
+        filterArea.Children.Add(primaryFilters);
+        var advanced=new Expander{Header="日期、排序与筛选",Content=filters,IsExpanded=model.FiltersExpanded,Foreground=Ui.B("#C2BEC8"),Margin=new Thickness(0,0,0,10)};
+        advanced.Expanded+=(_,_)=>model.FiltersExpanded=true;advanced.Collapsed+=(_,_)=>model.FiltersExpanded=false;
+        filterArea.Children.Add(advanced);DockPanel.SetDock(filterArea,Dock.Top);outer.Children.Add(filterArea);
         rangeLabel=Ui.Text("",12);rangeLabel.Margin=new Thickness(0,0,0,10);DockPanel.SetDock(rangeLabel,Dock.Top);outer.Children.Add(rangeLabel);
 
         split=new Grid();split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(320)});split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
@@ -142,7 +150,7 @@ internal sealed class ReadingView:UserControl
         }
         itemStyle.Setters.Add(new Setter(Control.TemplateProperty,template));list.ItemContainerStyle=itemStyle;
         var stack=new FrameworkElementFactory(typeof(StackPanel));
-        foreach(var pair in new[]{("DisplayTitle",14.0,"#FCFCFC"),("DisplayMeta",12.0,"#ADA8B1"),("Status",12.0,"#DBA5BE")})
+        foreach(var pair in new[]{("DisplayTitle",14.0,"#FCFCFC"),("EnglishSubtitle",12.0,"#B0ABB5"),("DisplayMeta",12.0,"#ADA8B1"),("Status",12.0,"#DBA5BE")})
         {
             var text=new FrameworkElementFactory(typeof(TextBlock));text.SetBinding(TextBlock.TextProperty,new Binding(pair.Item1));text.SetValue(TextBlock.TextWrappingProperty,TextWrapping.Wrap);
             text.SetValue(TextBlock.FontSizeProperty,pair.Item2);text.SetValue(TextBlock.ForegroundProperty,Ui.B(pair.Item3));text.SetValue(FrameworkElement.MarginProperty,new Thickness(0,0,0,6));stack.AppendChild(text);
@@ -193,24 +201,25 @@ internal sealed class ReadingView:UserControl
     private void RenderDetail(Article a)
     {
         if(reader==null)return;
-        string key=a.Id+a.Summary+a.Abstract+a.Status+a.AbstractStatus+a.Favorite+generating.Contains(a.Id);
+        string key=a.Id+a.Title+a.ChineseTitle+a.ChineseAbstract+a.Summary+a.Abstract+a.Status+a.AbstractStatus+a.Favorite+generating.Contains(a.Id);
         if(detailKey==key)return;
         bool same=detailId==a.Id;detailId=a.Id;double offset=Child<ScrollViewer>(reader)?.VerticalOffset??0;detailKey=key;
         var panel=new DockPanel();var actions=new WrapPanel();
         actions.Children.Add(ActionButton("返回列表",()=>{narrowDetail=false;Adapt();list?.Focus();}));
         actions.Children.Add(ActionButton(a.Favorite?"已收藏":"收藏",()=>{a.Favorite=!a.Favorite;model.Service!.SaveArticle(a);}));
         actions.Children.Add(ActionButton("打开原文",()=>Open(a.Url)));
-        var generate=ActionButton(a.Summary.Length>0&&a.SummaryKey.Length>0?"已生成总结":a.Status=="待生成"?"生成总结":"生成／重试",async()=>await Generate(a));
-        generate.IsEnabled=!generating.Contains(a.Id)&&!(a.Summary.Length>0&&a.SummaryKey.Length>0);actions.Children.Add(generate);
+        var generate=ActionButton(model.Service!.Complete(a)?"已处理":a.ChineseTitle.Length>0?"补齐／重试":"翻译并总结",async()=>await Generate(a));
+        generate.IsEnabled=!generating.Contains(a.Id)&&!model.Service!.Complete(a);actions.Children.Add(generate);
         DockPanel.SetDock(actions,Dock.Top);panel.Children.Add(actions);
         var content=Stack();content.Children.Add(CopyText(a.ChineseTitle.Length>0?a.ChineseTitle:a.Title,22));
         if(a.ChineseTitle.Length>0){Ui.Gap(content,8);content.Children.Add(CopyText(a.Title,13));}
         Ui.Gap(content);content.Children.Add(Ui.Text(a.DisplayMeta,12));content.Children.Add(Ui.Text(a.DateEvidence,12));Ui.Gap(content,20);
-        content.Children.Add(Ui.Text("中文总结 · "+a.Basis,13,"#F0A9C8"));Ui.Gap(content);
+        void Section(string heading,string text){content.Children.Add(Ui.Text(heading,13,"#F0A9C8"));Ui.Gap(content,8);content.Children.Add(CopyText(text));Ui.Gap(content,20);}
+        Section(a.Basis=="基于导读"?"中文导读译文":"中文摘要译文",a.ChineseAbstract.Length>0?a.ChineseAbstract:a.HasAbstract?"待翻译，点击“翻译并总结／补齐”。":"摘要不足，暂仅翻译标题。");
+        Section(a.Basis=="基于导读"?"导读英文原文":"摘要英文原文",a.Abstract.Length>0?a.Abstract:"来源尚未提供可用摘要。");
         string summary=a.Summary;if(a.ChineseTitle.Length>0&&summary.Split('\n')[0].Trim('#',' ')==a.ChineseTitle)summary=string.Join("\n",summary.Split('\n').Skip(1)).Trim();
-        content.Children.Add(CopyText(summary.Length>0?summary:a.HasAbstract?"尚未生成中文总结。可先阅读下方原始摘要，或点击“生成总结”。":"当前可用摘要不足，暂不能总结。可打开原文查看公开摘要。"));
-        Ui.Gap(content);content.Children.Add(Ui.Text(a.Status,12));Ui.Gap(content,20);
-        var abstractView=new Expander{Header=a.Basis=="基于导读"?"原始导读":"原始摘要",IsExpanded=a.Summary.Length==0,Foreground=Ui.B("#FCFCFC"),Content=CopyText(a.Abstract.Length>0?a.Abstract:"来源尚未提供可用摘要。")};content.Children.Add(abstractView);
+        Section("中文总结 · "+a.Basis,summary.Length>0?summary:a.HasAbstract?"待生成中文总结。":"不根据标题编造总结。");
+        content.Children.Add(Ui.Text(a.Status,12));
         if(a.AbstractStatus.Length>0)content.Children.Add(Ui.Text(a.AbstractStatus,12));
         panel.Children.Add(new ScrollViewer{Content=content,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled});
         reader.Content=Ui.Panel(panel,new Thickness(18));if(same)Dispatcher.BeginInvoke(()=>Child<ScrollViewer>(reader)?.ScrollToVerticalOffset(offset));
@@ -218,7 +227,7 @@ internal sealed class ReadingView:UserControl
     private async Task Generate(Article a)
     {
         if(!model.Settings.Ready){status.Text="请先打开右上角阅读设置，配置摘要服务。";return;}
-        if(MessageBox.Show(Window.GetWindow(this),"将标题与摘要发送到已配置服务。手动生成不占每日自动额度，可能产生额外服务费用。","生成中文总结",MessageBoxButton.OKCancel)!=MessageBoxResult.OK)return;
+        if(MessageBox.Show(Window.GetWindow(this),"将标题与摘要发送到已配置服务，翻译并总结尚未完成的内容，可能产生服务费用。","翻译并总结",MessageBoxButton.OKCancel)!=MessageBoxResult.OK)return;
         if(!generating.Add(a.Id))return;RenderDetail(a);
         try{await model.Service!.Summarize(a);}catch(Exception e){status.Text=e.Message;}
         finally{generating.Remove(a.Id);RefreshList();}
@@ -228,7 +237,7 @@ internal sealed class ReadingView:UserControl
         var pagePanel=new DockPanel();
         var heading=Stack();heading.Children.Add(Ui.Text("选择你的刊物",24,"#FCFCFC"));heading.Children.Add(Ui.Text("首次获取最近七天可取得的条目。来源受限时会明确显示，不代表没有新文章。"));
         var search=new TextBox{Text=sourceSearch,ToolTip="搜索刊物",Margin=new Thickness(0,12,0,8)};heading.Children.Add(Ui.Text("搜索刊物",12));heading.Children.Add(search);
-        heading.Children.Add(ActionButton("刷新订阅",async()=>{status.Text="正在检查订阅…";await model.Service!.Refresh();}));
+        heading.Children.Add(ActionButton("刷新并翻译总结",async()=>await StartBatch(true)));
         DockPanel.SetDock(heading,Dock.Top);pagePanel.Children.Add(heading);
         var contents=Stack();sourcesPanel=Stack();contents.Children.Add(sourcesPanel);search.TextChanged+=(_,_)=>{sourceSearch=search.Text;RefreshSources();};
         var custom=new Expander{Header="添加自定义 RSS／Atom",Foreground=Ui.B("#FCFCFC")};var form=Stack();
@@ -256,21 +265,31 @@ internal sealed class ReadingView:UserControl
     private static TextBox Input(string text="")=>new(){Text=text,FontSize=14,Padding=new Thickness(0),MinHeight=40,Template=InputTemplate(typeof(TextBox)),Foreground=Ui.B("#FCFCFC")};
     private UIElement Settings(){
         var outer=new DockPanel();var p=Stack();p.MaxWidth=620;p.HorizontalAlignment=HorizontalAlignment.Left;
-        p.Children.Add(Ui.Text("阅读设置",24,"#FCFCFC"));Ui.Gap(p,8);p.Children.Add(Ui.Text("中文总结只发送标题与摘要。没有API也可以订阅和阅读原始摘要。",13));
-        var endpoint=Input(model.Settings.Endpoint);var name=Input(model.Settings.Model);
+        p.Children.Add(Ui.Text("阅读设置",24,"#FCFCFC"));Ui.Gap(p,8);p.Children.Add(Ui.Text("翻译与总结只发送标题和摘要。没有API也可以订阅和阅读原始摘要。",13));
+        var endpoint=Input(model.Settings.Endpoint.Length>0?model.Settings.Endpoint:"https://api.deepseek.com");var name=Input(model.Settings.Model.Length>0?model.Settings.Model:"deepseek-flash");
         var key=new PasswordBox{ToolTip="留空保留现有密钥",FontSize=14,Padding=new Thickness(0),MinHeight=40,Foreground=Ui.B("#FCFCFC"),Template=InputTemplate(typeof(PasswordBox))};
-        var automatic=new CheckBox{Content="自动生成中文总结",IsChecked=model.Settings.Automatic,Margin=new Thickness(0,12,0,8)};
-        var limit=Input(model.Settings.DailyLimit.ToString());limit.MaxWidth=140;limit.HorizontalAlignment=HorizontalAlignment.Left;
-        foreach(var pair in new[]{("API地址（HTTPS，通常以 /v1 结尾）",(UIElement)endpoint),("模型名称",name),("API密钥（留空保留，本机加密保存）",key)}){
+        var automatic=new CheckBox{Content=new TextBlock{Text="自动翻译总结已订阅期刊近7天的全部待完成内容",TextWrapping=TextWrapping.Wrap},IsChecked=model.Settings.Automatic,Margin=new Thickness(0,12,0,8)};
+        var scheduled=new ComboBox{ItemsSource=new[]{"每天空闲时","每天指定时刻后空闲时"},SelectedIndex=model.Settings.Scheduled?1:0,MinHeight=40};
+        var time=Input(model.Settings.ScheduledTime);time.ToolTip="本地时间 HH:mm，例如 20:30；到点仍忙碌则等待空闲";time.IsEnabled=model.Settings.Scheduled;scheduled.SelectionChanged+=(_,_)=>time.IsEnabled=scheduled.SelectedIndex==1;
+        foreach(var pair in new[]{("API地址（HTTPS，例如 https://api.deepseek.com）",(UIElement)endpoint),("模型名称",name),("API密钥（留空保留，本机加密保存）",key)}){
             Ui.Gap(p,14);p.Children.Add(Ui.Text(pair.Item1,12));Ui.Gap(p,5);p.Children.Add(pair.Item2);}
-        p.Children.Add(automatic);p.Children.Add(Ui.Text("每天自动篇数（1–500），手动生成另计服务用量",12));Ui.Gap(p,5);p.Children.Add(limit);
-        bool Save(){if(!int.TryParse(limit.Text,out var count)||count<1||count>500){status.Text="每日篇数范围为1–500。";return false;}if(endpoint.Text.Trim().Length==0&&automatic.IsChecked!=true){model.Settings.Automatic=false;model.Settings.DailyLimit=count;model.Service!.Configure(model.Settings);status.Text="自动总结已关闭。";return true;}if(!Uri.TryCreate(endpoint.Text.Trim(),UriKind.Absolute,out var uri)||uri.Scheme!="https"||uri.UserInfo.Length>0||uri.Query.Length>0){status.Text="请输入不含密码或查询参数的HTTPS API地址。";return false;}string address=endpoint.Text.Trim().TrimEnd('/');if(model.Settings.AbstractConsent!=address&&MessageBox.Show(Window.GetWindow(this),"生成摘要会发送文章标题和摘要／导读到：\n"+address+"\n是否允许？","摘要发送范围",MessageBoxButton.OKCancel)!=MessageBoxResult.OK)return false;model.Settings.Endpoint=address;model.Settings.Model=name.Text.Trim();if(key.Password.Length>0)model.Settings.SetKey(key.Password);model.Settings.AbstractConsent=address;model.Settings.Automatic=automatic.IsChecked==true;model.Settings.DailyLimit=count;model.Service!.Configure(model.Settings);status.Text="阅读设置已保存。";return true;}
+        p.Children.Add(automatic);p.Children.Add(Ui.Text("自动调度方式",12));p.Children.Add(scheduled);Ui.Gap(p,8);p.Children.Add(Ui.Text("指定时刻（HH:mm，不唤醒电脑）",12));p.Children.Add(time);
+        p.Children.Add(Ui.Text("自动任务等待3分钟无键鼠、CPU持续低于20%、非节电且无全屏／演示。手动开始可直接处理；暂停在当前请求完成后生效。",12));
+        bool Save(){
+            string address=endpoint.Text.Trim().TrimEnd('/');
+            if(!Uri.TryCreate(address,UriKind.Absolute,out var uri)||uri.Scheme!="https"||uri.UserInfo.Length>0||uri.Query.Length>0){status.Text="请输入不含密码或查询参数的HTTPS地址。";return false;}
+            if(scheduled.SelectedIndex==1&&!TimeOnly.TryParseExact(time.Text.Trim(),"HH:mm",out _)){status.Text="请填写指定时刻 HH:mm。";return false;}
+            if(model.Settings.AbstractConsent!=address&&MessageBox.Show(Window.GetWindow(this),"会发送标题和摘要／导读到：\n"+address+"\n用于中文翻译与总结。是否允许？","AI发送范围",MessageBoxButton.OKCancel)!=MessageBoxResult.OK)return false;
+            model.Settings.Endpoint=address;model.Settings.Model=name.Text.Trim();if(key.Password.Length>0)model.Settings.SetKey(key.Password);
+            model.Settings.AbstractConsent=address;model.Settings.Automatic=automatic.IsChecked==true;model.Settings.Scheduled=scheduled.SelectedIndex==1;model.Settings.ScheduledTime=time.Text.Trim();
+            model.Service!.Configure(model.Settings);status.Text="阅读设置已保存。";UpdateQueue();return true;
+        }
         var actions=new WrapPanel{Margin=new Thickness(0,12,0,0)};
         actions.Children.Add(ActionButton("保存设置",()=>Save()));
         actions.Children.Add(ActionButton("测试连接",async()=>{if(!Save())return;try{status.Text=await model.Service!.Test();}catch(Exception ex){status.Text=ex.Message;}}));
         actions.Children.Add(ActionButton("返回文章",()=>Show(0)));DockPanel.SetDock(actions,Dock.Bottom);outer.Children.Add(actions);
         Ui.Gap(p,18);p.Children.Add(Ui.Text("订阅每两小时检查。普通文章保留90天，收藏长期保留。停用后停止更新，保留已有数据。",12));
-        p.Children.Add(ActionButton("停用阅读后台",()=>{if(model.Service!=null)model.Service.Updated-=Update;model.Disable();Show(0);}));
+        p.Children.Add(ActionButton("停用阅读后台",()=>{if(model.Service!=null){model.Service.Updated-=Update;model.Service.QueueUpdated-=UpdateQueue;}model.Disable();Show(0);}));
         outer.Children.Add(new ScrollViewer{Content=p,VerticalScrollBarVisibility=ScrollBarVisibility.Auto});return outer;
     }
     private static void Open(string url){if(ReadingCatalog.Http(url))System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url){UseShellExecute=true});}

@@ -1,0 +1,12 @@
+{
+  "models": [],
+  "selected": "",
+  "attempts": 0,
+  "error": "HttpRequestException",
+  "rows": [],
+  "seconds": 5.1001006,
+  "averageWholeMachineCpuPercent": 0.14041774228903944,
+  "peakPrivateCommitBytes": 14475264,
+  "scope": "isolated AI client; no WPF/audio; private commit, not private working set",
+  "temporaryConfigRemoved": true
+}

@@ -23,6 +23,12 @@ internal sealed class ReadingStore
     internal Article? FindUrl(string url){lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="SELECT json FROM objects WHERE kind='article' AND json_extract(json,'$.Url')=$u LIMIT 1";cmd.Parameters.AddWithValue("$u",url);return cmd.ExecuteScalar() is string text?JsonSerializer.Deserialize<Article>(text):null;}}
     internal List<Article> Pending(string day,int limit){lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="SELECT json FROM (SELECT json,ROW_NUMBER() OVER(PARTITION BY json_extract(json,'$.SourceId') ORDER BY json_extract(json,'$.Discovered')) AS turn FROM objects WHERE kind='article' AND json_extract(json,'$.PublishedDay')=$d AND json_extract(json,'$.SummaryKey')='' AND json_extract(json,'$.Status') IN ('待生成','文章已更新，摘要待更新') AND json_extract(json,'$.SourceId') IN (SELECT id FROM objects WHERE kind='source' AND json_extract(json,'$.Subscribed')=1)) ORDER BY turn LIMIT $l";cmd.Parameters.AddWithValue("$d",day);cmd.Parameters.AddWithValue("$l",Math.Clamp(limit,1,500));using var r=cmd.ExecuteReader();var list=new List<Article>();while(r.Read())list.Add(JsonSerializer.Deserialize<Article>(r.GetString(0))!);return list;}}
     internal void Put<T>(string kind,string id,T value){lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="INSERT INTO objects VALUES($k,$i,$j) ON CONFLICT(kind,id) DO UPDATE SET json=excluded.json";cmd.Parameters.AddWithValue("$k",kind);cmd.Parameters.AddWithValue("$i",id);cmd.Parameters.AddWithValue("$j",JsonSerializer.Serialize(value));cmd.ExecuteNonQuery();}}
+    internal Article? UpdateArticle(string id,Action<Article> update){
+        lock(gate){var article=Find<Article>("article",id);if(article==null)return null;update(article);Put("article",id,article);return article;}
+    }
+    internal AiUsage[] BatchUsage(string batch){
+        lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="SELECT json FROM objects WHERE kind='ai-usage' AND json_extract(json,'$.BatchId')=$batch";cmd.Parameters.AddWithValue("$batch",batch);using var r=cmd.ExecuteReader();var rows=new List<AiUsage>();while(r.Read())rows.Add(JsonSerializer.Deserialize<AiUsage>(r.GetString(0))!);return rows.ToArray();}
+    }
     internal void Delete(string kind,string id){lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="DELETE FROM objects WHERE kind=$k AND id=$i";cmd.Parameters.AddWithValue("$k",kind);cmd.Parameters.AddWithValue("$i",id);cmd.ExecuteNonQuery();}}
     internal bool Reserve(string day,int limit){lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="INSERT INTO usage VALUES($d,1) ON CONFLICT(day) DO UPDATE SET n=n+1 WHERE n<$l RETURNING n";cmd.Parameters.AddWithValue("$d",day);cmd.Parameters.AddWithValue("$l",limit);return limit>0&&cmd.ExecuteScalar()!=null;}}
     internal void MigrateAbstractMode(){
@@ -35,5 +41,23 @@ internal sealed class ReadingStore
             foreach(var file in new DirectoryInfo(cache).GetFiles())if(!file.Attributes.HasFlag(FileAttributes.ReparsePoint))file.Delete();
         Put("migration","abstract-mode",1);
     }
-    internal void Prune(){lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="DELETE FROM objects WHERE kind='article' AND json_extract(json,'$.Favorite')=0 AND julianday(json_extract(json,'$.Discovered'))<julianday($cut)";cmd.Parameters.AddWithValue("$cut",DateTimeOffset.Now.AddDays(-90).ToString("O"));cmd.ExecuteNonQuery();}}
+    internal void MigrateBilingual(){
+        if(Find<int>("migration","bilingual")==1)return;
+        lock(gate){using var c=Open();using var tx=c.BeginTransaction();using var cmd=c.CreateCommand();cmd.Transaction=tx;
+            cmd.CommandText="UPDATE objects SET json=json_set(json,'$.Subscribed',json(CASE WHEN id='jacs' THEN 'true' ELSE 'false' END)) WHERE kind='source'; INSERT OR REPLACE INTO objects VALUES('migration','bilingual','1');";
+            cmd.ExecuteNonQuery();tx.Commit();}
+    }
+    internal List<string> RecentIds(DateTime today){
+        lock(gate){using var c=Open();using var cmd=c.CreateCommand();
+            cmd.CommandText="SELECT id FROM objects WHERE kind='article' AND COALESCE(json_extract(json,'$.PublishedDay'),date(json_extract(json,'$.Discovered'),'localtime')) BETWEEN $from AND $to AND json_extract(json,'$.SourceId') IN (SELECT id FROM objects WHERE kind='source' AND json_extract(json,'$.Subscribed')=1) ORDER BY json_extract(json,'$.PublishedDay') DESC, id";
+            cmd.Parameters.AddWithValue("$from",today.AddDays(-6).ToString("yyyy-MM-dd"));cmd.Parameters.AddWithValue("$to",today.ToString("yyyy-MM-dd"));using var r=cmd.ExecuteReader();var ids=new List<string>();while(r.Read())ids.Add(r.GetString(0));return ids;}
+    }
+    internal void ClearJobs(){lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="DELETE FROM objects WHERE kind='ai-job'";cmd.ExecuteNonQuery();}}
+    internal void SaveBatch(AiQueueState state,IEnumerable<AiJob> jobs){
+        lock(gate){using var c=Open();using var tx=c.BeginTransaction();using var cmd=c.CreateCommand();cmd.Transaction=tx;cmd.CommandText="DELETE FROM objects WHERE kind='ai-job'";cmd.ExecuteNonQuery();
+            cmd.CommandText="INSERT OR REPLACE INTO objects VALUES($kind,$id,$json)";cmd.Parameters.AddWithValue("$kind","");cmd.Parameters.AddWithValue("$id","");cmd.Parameters.AddWithValue("$json","");
+            void PutRow(string kind,string id,object value){cmd.Parameters["$kind"].Value=kind;cmd.Parameters["$id"].Value=id;cmd.Parameters["$json"].Value=JsonSerializer.Serialize(value);cmd.ExecuteNonQuery();}
+            foreach(var job in jobs)PutRow("ai-job",job.Id,job);PutRow("ai-state","current",state);tx.Commit();}
+    }
+    internal void Prune(){lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="DELETE FROM objects WHERE (kind='article' AND json_extract(json,'$.Favorite')=0 AND julianday(json_extract(json,'$.Discovered'))<julianday($cut)) OR (kind='ai-usage' AND julianday(json_extract(json,'$.At'))<julianday($cut))";cmd.Parameters.AddWithValue("$cut",DateTimeOffset.Now.AddDays(-90).ToString("O"));cmd.ExecuteNonQuery();}}
 }

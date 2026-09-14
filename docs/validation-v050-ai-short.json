@@ -1,0 +1,22 @@
+{
+  "measurements": [
+    {
+      "phase": "paused queue with idle monitor",
+      "seconds": 15.9196851,
+      "averageWholeMachineCpuPercent": 0.03271628986828807,
+      "initialPrivateCommitBytes": 16375808,
+      "peakPrivateCommitBytes": 17129472,
+      "incrementBytes": 753664
+    },
+    {
+      "phase": "single simulated cloud request and saved result",
+      "seconds": 15.9018245,
+      "averageWholeMachineCpuPercent": 0.135106305374916,
+      "initialPrivateCommitBytes": 16338944,
+      "peakPrivateCommitBytes": 20414464,
+      "incrementBytes": 4075520
+    }
+  ],
+  "simulatedRequests": 1,
+  "scope": "isolated reading service; mock API; private commit is not private working set; no audio/WPF"
+}
