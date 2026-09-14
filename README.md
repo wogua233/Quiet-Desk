@@ -2,7 +2,7 @@
 
 适合工作与学习时使用的 Windows 桌面音乐播放器。采用原生 WPF 界面，以中性深灰与柔粉色为主，支持真正嵌入桌面的紧凑组件。
 
-当前版本 **0.4.1**：阅读改为摘要模式与列表／正文布局，自动总结默认每天10篇，可调整。详见 [阅读使用说明](docs/READING.md) 与 [验证记录](docs/validation-v041.md)。
+当前版本 **0.4.2**：阅读默认显示最近7天，修复非日更期刊列表空白及Nature导读字段遗漏；自动总结默认每天10篇，可调整。详见 [阅读使用说明](docs/READING.md) 与 [验证记录](docs/validation-v042.md)。
 
 ## 主要功能
 
@@ -28,7 +28,7 @@
 ./scripts/build.ps1 -Publish
 
 # 运行
-./artifacts/QuietDesk-v0.4.1-win-x64/QuietDesk.exe
+./artifacts/QuietDesk-v0.4.2-win-x64/QuietDesk.exe
 
 # 打包便携版与源码
 ./scripts/package.ps1

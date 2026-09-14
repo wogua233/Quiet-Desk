@@ -25,7 +25,7 @@ public sealed class Source
 {
     public string Id {get;set;}="";public string Name {get;set;}="";public string Url {get;set;}="";public string Publisher {get;set;}="";
     public bool Subscribed {get;set;} public string Status {get;set;}="尚未更新";public DateTimeOffset? LastSuccess {get;set;}
-    public string ETag {get;set;}="";public string Modified {get;set;}="";public DateTimeOffset? NextAttempt {get;set;} public int Failures {get;set;} public int ArticleCount {get;set;}
+    public string ETag {get;set;}="";public string Modified {get;set;}="";public DateTimeOffset? NextAttempt {get;set;} public int Failures {get;set;} public int ArticleCount {get;set;} public int ParserVersion {get;set;}
     public override string ToString()=>Name;
 }
 public sealed class Article

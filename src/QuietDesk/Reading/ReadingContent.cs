@@ -29,8 +29,15 @@ internal static class ReadingContent
             if(Regex.IsMatch(raw,@"^\d{4}-\d{2}-\d{2}$"))day=raw;
             else if(DateTimeOffset.TryParse(raw,CultureInfo.InvariantCulture,DateTimeStyles.AllowWhiteSpaces,out var when))day=when.ToLocalTime().ToString("yyyy-MM-dd");
             string excerpt=V("description","summary");
+            // Nature's official feed uses content:encoded for a short standfirst, not article body.
+            if(source.Publisher=="nature"&&new Uri(source.Url).Host=="www.nature.com"&&excerpt.Length==0){
+                var fragment=new HtmlDocument();fragment.LoadHtml(V("encoded"));
+                var header=fragment.DocumentNode.SelectSingleNode("//p");
+                if(header!=null&&header.InnerText.Contains("Published online:")){header.Remove();excerpt=fragment.DocumentNode.InnerHtml;}
+            }
+
             if(source.Publisher=="aps"){var fragment=new HtmlDocument();fragment.LoadHtml(excerpt);var paragraph=fragment.DocumentNode.SelectSingleNode("//p");if(paragraph!=null)excerpt=paragraph.InnerHtml;}
-            var a=new Article{Id=ReadingCatalog.Hash(doi.Length>0?doi:source.Id+":"+url),Doi=doi,SourceId=source.Id,SourceName=source.Name,Title=title,Url=url,Basis=source.Publisher=="news"?"基于导读":"基于摘要",Abstract=Plain(excerpt),PublishedDay=day,DateEvidence=raw.Length==0?"未知":"订阅源发表日期"};if(a.Abstract.Length>16000)a.Abstract=a.Abstract[..16000];list.Add(a);
+            var a=new Article{Id=ReadingCatalog.Hash(doi.Length>0?doi:source.Id+":"+url),Doi=doi,SourceId=source.Id,SourceName=source.Name,Title=title,Url=url,Basis=source.Publisher is "news" or "nature"?"基于导读":"基于摘要",Abstract=Plain(excerpt),PublishedDay=day,DateEvidence=raw.Length==0?"未知":"订阅源发表日期"};if(a.Abstract.Length>16000)a.Abstract=a.Abstract[..16000];list.Add(a);
         }return list;
     }
 }

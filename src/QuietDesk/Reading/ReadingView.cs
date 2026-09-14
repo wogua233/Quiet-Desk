@@ -11,7 +11,7 @@ namespace QuietDesk.Reading;
 internal sealed class ReadingViewModel:IDisposable
 {
     internal DateTime SelectedDay {get;set;}=DateTime.Today;internal int SelectedPage {get;set;}
-    internal string SourceId="",SelectedId="";internal bool Discovered,Favorites,Unread;internal int Offset;internal double ScrollOffset;
+    internal string SourceId="",SelectedId="";internal bool Discovered,Favorites,Unread;internal bool Recent=true;internal int Offset;internal double ScrollOffset;
     internal string Directory {get;}internal ReadingSettings Settings {get;private set;}internal ReadingService? Service {get;private set;}internal string Error {get;private set;}="";
     internal ReadingViewModel(string directory){Directory=directory;Settings=ReadingService.LoadSettings(directory);if(Settings.Enabled)try{Service=new(System.IO.Path.Combine(directory,"reading"),Settings);}catch(Exception e){Error="阅读数据暂不可用："+e.Message;}}
     internal void Enable(){try{Service??=new(System.IO.Path.Combine(Directory,"reading"),Settings);Settings.Enabled=true;ReadingService.SaveSettings(Directory,Settings);Error="";}catch(Exception e){Error="无法启用阅读："+e.Message;}}
@@ -32,7 +32,7 @@ internal sealed class ReadingView:UserControl
     private Grid? split;
     private FrameworkElement? listPane;
     private ContentControl? reader;
-    private TextBlock? empty;
+    private TextBlock? empty;private TextBlock? rangeLabel;
     private StackPanel? sourcesPanel;
     private string sourceSearch="";
     private Article? selected;private string detailKey="",detailId="";
@@ -94,12 +94,14 @@ internal sealed class ReadingView:UserControl
     {
         var outer=new DockPanel();
         var filters=new WrapPanel{Margin=new Thickness(0,0,0,8)};
+        var range=new ComboBox{Width=124,ItemsSource=new[]{"最近7天","指定日期"},SelectedIndex=model.Recent?0:1,Margin=new Thickness(0,0,8,8)};
+        range.SelectionChanged+=(_,_)=>{model.Recent=range.SelectedIndex==0;ResetFilter();};filters.Children.Add(range);
         var previous=ActionButton("前一天",()=>ChangeDay(-1));previous.ToolTip="查看前一天";filters.Children.Add(previous);
         var day=Input(model.SelectedDay.ToString("yyyy-MM-dd"));day.Width=142;day.Height=42;day.VerticalAlignment=VerticalAlignment.Top;day.Margin=new Thickness(0,0,8,8);day.ToolTip="日期（yyyy-MM-dd），回车确认";
-        day.KeyDown+=(_,e)=>{if(e.Key==Key.Enter){if(DateTime.TryParseExact(day.Text,"yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.None,out var parsed)){model.SelectedDay=parsed;ResetFilter();}else status.Text="请按 yyyy-MM-dd 输入日期。";}};
+        day.KeyDown+=(_,e)=>{if(e.Key==Key.Enter){if(DateTime.TryParseExact(day.Text,"yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.None,out var parsed)){model.SelectedDay=parsed;model.Recent=false;ResetFilter();}else status.Text="请按 yyyy-MM-dd 输入日期。";}};
         filters.Children.Add(day);
         filters.Children.Add(ActionButton("后一天",()=>ChangeDay(1)));
-        filters.Children.Add(ActionButton("今天",()=>{model.SelectedDay=DateTime.Today;ResetFilter();}));
+        filters.Children.Add(ActionButton("今天",()=>{model.SelectedDay=DateTime.Today;model.Recent=false;ResetFilter();}));
         var source=new ComboBox{Width=180,ItemsSource=new[]{new Source{Id="",Name="全部刊物"}}.Concat(model.Service!.Sources()).ToList(),SelectedValuePath="Id",SelectedValue=model.SourceId,Margin=new Thickness(0,0,8,8)};
         source.SelectionChanged+=(_,_)=>{model.SourceId=(source.SelectedItem as Source)?.Id??"";model.Offset=0;model.SelectedId="";selected=null;model.ScrollOffset=0;RefreshList();};filters.Children.Add(source);
         var mode=new ComboBox{Width=140,ItemsSource=new[]{"按发表日期","按发现日期"},SelectedIndex=model.Discovered?1:0,Margin=new Thickness(0,0,8,8),ToolTip="今天：今日发表／今日发现；往日：对应日期的发表／发现记录"};
@@ -107,6 +109,7 @@ internal sealed class ReadingView:UserControl
         filters.Children.Add(Toggle("收藏（全部日期）",model.Favorites,v=>model.Favorites=v));filters.Children.Add(Toggle("仅未读",model.Unread,v=>model.Unread=v));
         filters.Children.Add(ActionButton("刷新订阅",async()=>{status.Text="正在检查订阅…";await model.Service.Refresh();}));
         DockPanel.SetDock(filters,Dock.Top);outer.Children.Add(filters);
+        rangeLabel=Ui.Text("",12);rangeLabel.Margin=new Thickness(0,0,0,10);DockPanel.SetDock(rangeLabel,Dock.Top);outer.Children.Add(rangeLabel);
 
         split=new Grid();split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(320)});split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
         var left=new DockPanel{Margin=new Thickness(0,0,12,0)};
@@ -140,18 +143,21 @@ internal sealed class ReadingView:UserControl
         listPane=left;split.Children.Add(left);reader=new ContentControl();Grid.SetColumn(reader,1);split.Children.Add(reader);
         outer.Children.Add(split);RefreshList();Adapt();return outer;
     }
-    private void ChangeDay(int amount){model.SelectedDay=model.SelectedDay.AddDays(amount);ResetFilter();}
+    private void ChangeDay(int amount){model.SelectedDay=model.SelectedDay.AddDays(amount);model.Recent=false;ResetFilter();}
     private void ResetFilter(){model.Offset=0;model.SelectedId="";model.ScrollOffset=0;Show(0);}
     private void RefreshList()
     {
         if(list==null||model.Service==null||page!=0)return;
         var id=selected?.Id??model.SelectedId;var scroll=Child<ScrollViewer>(list);double offset=scroll?.VerticalOffset??model.ScrollOffset;
-        var articles=model.Service.Query(model.SelectedDay.ToString("yyyy-MM-dd"),model.SourceId,model.Discovered,model.Favorites,model.Offset,model.Unread);
+        var articles=model.Service.Query(model.SelectedDay.ToString("yyyy-MM-dd"),model.SourceId,model.Discovered,model.Favorites,model.Offset,model.Unread,model.Recent);
         // Keep the actively read item visible until the user changes a filter.
         if(model.Unread&&selected!=null&&selected.Id==model.SelectedId&&!articles.Any(a=>a.Id==selected.Id))articles.Insert(0,selected);
         refreshing=true;list.ItemsSource=articles;var match=articles.FirstOrDefault(a=>a.Id==id);list.SelectedItem=match;refreshing=false;
         var subscribed=model.Service.Sources().Where(s=>s.Subscribed).ToList();
-        empty!.Text=articles.Count>0?"":subscribed.Count==0?"尚未订阅刊物\n打开“订阅”，选择感兴趣的内容。":subscribed.Any(s=>s.Failures>0)?"当前筛选没有条目，部分来源更新失败。\n请在“订阅”查看连接状态，或切换“按发现日期”。":"当前筛选没有文章。\n可切换日期或“按发现日期”，查看近期发现的内容。";
+        var relevant=subscribed.Where(s=>model.SourceId.Length==0||s.Id==model.SourceId).ToList();
+        if(rangeLabel!=null)rangeLabel.Text=model.Favorites?"全部日期的收藏":(model.Recent?$"{model.SelectedDay.AddDays(-6):yyyy-MM-dd} 至 {model.SelectedDay:yyyy-MM-dd}":$"{model.SelectedDay:yyyy-MM-dd}")+" · "+(model.Discovered?"按发现日期":"按发表日期")+" · 本页 "+articles.Count+" 篇";
+        string latest=articles.Count==0?model.Service.LatestDay(model.SourceId):"";
+        empty!.Text=articles.Count>0?"":relevant.Count==0?"尚未订阅所选刊物。\n请在“订阅”中勾选。":relevant.Any(s=>s.Failures>0)?"当前筛选没有条目，来源更新失败。\n请在“订阅”查看原因。":latest.Length>0?$"当前日期或筛选没有文章。\n最近收录的发表日期：{latest}\n请切换“最近7天”或输入该日期。":"尚未收录文章。\n刷新订阅后查看连接状态；无更新不代表获取失败。";
         empty.Visibility=articles.Count==0?Visibility.Visible:Visibility.Collapsed;
         if(match!=null)Select(match,false);else{selected=null;detailKey="";if(reader!=null)reader.Content=Ui.Panel(Ui.Text("选择一篇文章开始阅读。\n中文总结仅依据摘要或导读。",16));}
         var currentList=list;Dispatcher.BeginInvoke(()=>{if(list==currentList)Child<ScrollViewer>(currentList)?.ScrollToVerticalOffset(offset);});
