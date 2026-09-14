@@ -12,7 +12,8 @@ namespace QuietDesk.Reading;
 internal sealed class ReadingService:IDisposable
 {
     private readonly ReadingStore store;
-    private readonly HttpClient http=ReadingContent.Client();
+    private readonly HttpClient http;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string,byte> checkingSources=new();
     private readonly SummaryClient summaries;
     private readonly CancellationTokenSource stop=new();
     private readonly SemaphoreSlim sync=new(1),api=new(1),slots=new(2),dispatch=new(1);
@@ -28,8 +29,9 @@ internal sealed class ReadingService:IDisposable
     internal string QueueStatus {get;private set;}="尚未开始翻译";
     internal bool QueuePaused=>queue.Paused;
 
-    internal ReadingService(string directory,ReadingSettings settings,HttpMessageHandler? summaryHandler=null,bool start=true)
+    internal ReadingService(string directory,ReadingSettings settings,HttpMessageHandler? summaryHandler=null,bool start=true,HttpMessageHandler? sourceHandler=null)
     {
+        http=sourceHandler==null?ReadingContent.Client():new HttpClient(sourceHandler);
         summaries=new(summaryHandler);Settings=Clone(settings);store=new(directory);
         foreach(var s in ReadingCatalog.All()){
             var existing=store.Find<Source>("source",s.Id);
@@ -64,7 +66,7 @@ internal sealed class ReadingService:IDisposable
     internal List<Article> Articles()=>store.Load<Article>("article");
     internal List<Article> Query(string day,string source,bool discovered,bool favorites,int offset,bool unread=false,bool recent=false,ArticleOrder order=ArticleOrder.Newest)=>store.Query(day,source,discovered,favorites,offset,unread,recent,order);
     internal string LatestDay(string source)=>store.LatestDay(source);
-    internal void SaveSource(Source s){store.Put("source",s.Id,s);next=DateTimeOffset.MinValue;Changed();}
+    internal void SaveSource(Source s){var latest=store.Find<Source>("source",s.Id);if(latest!=null){latest.Subscribed=s.Subscribed;s=latest;}store.Put("source",s.Id,s);next=DateTimeOffset.MinValue;Changed();}
     internal void RemoveSource(Source s){s.Subscribed=false;SaveSource(s);if(s.Id.StartsWith("custom-"))store.Delete("source",s.Id);}
     internal void SaveArticle(Article a)
     {
@@ -80,16 +82,33 @@ internal sealed class ReadingService:IDisposable
         });Changed();return result;
     }
     private void Changed()=>Updated?.Invoke();
-    internal Task Refresh()=>Task.Run(RefreshCore);
-    private async Task RefreshCore()
+    internal bool IsCheckingSource(string id)=>checkingSources.ContainsKey(id);
+    internal Task Refresh(bool force=false)=>Task.Run(()=>RefreshCore(force));
+    internal async Task CheckSource(string id)
+    {
+        if(!checkingSources.TryAdd(id,0))return;
+        Changed();
+        try{
+            await sync.WaitAsync(stop.Token);
+            try{var s=store.Find<Source>("source",id);if(s!=null)await Fetch(s);}
+            finally{sync.Release();}
+        }catch(OperationCanceledException)when(stop.IsCancellationRequested){}
+        finally{checkingSources.TryRemove(id,out _);Changed();}
+    }
+    private async Task RefreshCore(bool force)
     {
         await sync.WaitAsync(stop.Token);
         try{
             if(!NetworkInterface.GetIsNetworkAvailable()){Status="网络不可用，保留已有文章。";next=DateTimeOffset.Now.AddMinutes(1);return;}
             Status="正在检查订阅…";Changed();
-            var sources=Sources().Where(s=>s.Subscribed&&(!s.NextAttempt.HasValue||s.NextAttempt<=DateTimeOffset.Now)).ToList();
-            await Task.WhenAll(sources.Select(async s=>{await slots.WaitAsync(stop.Token);try{await Fetch(s);}finally{slots.Release();}}));
-            Status="订阅检查完成";next=DateTimeOffset.Now.AddHours(2);store.Prune();
+            var subscribed=Sources().Where(s=>s.Subscribed).ToList();
+            var sources=subscribed.Where(s=>force||!s.NextAttempt.HasValue||s.NextAttempt<=DateTimeOffset.Now).ToList();
+            await Task.WhenAll(sources.Select(async s=>{await slots.WaitAsync(stop.Token);checkingSources.TryAdd(s.Id,0);Changed();try{await Fetch(s);}finally{checkingSources.TryRemove(s.Id,out _);slots.Release();Changed();}}));
+            int failed=Sources().Count(s=>sources.Any(attempt=>attempt.Id==s.Id)&&s.Failures>0),waiting=subscribed.Count-sources.Count;
+            Status=subscribed.Count==0?"尚未订阅刊物；可在刊物旁单独检查来源。":$"订阅检查完成 · 成功 {sources.Count-failed} · 失败 {failed}"+(waiting>0?$" · 等待重试 {waiting}":"");
+            next=DateTimeOffset.Now.AddHours(2);
+            foreach(var retry in Sources().Where(s=>s.Subscribed&&s.NextAttempt.HasValue))if(retry.NextAttempt!.Value<next)next=retry.NextAttempt.Value;
+            store.Prune();
         }catch(OperationCanceledException){}catch(Exception e){Status="阅读更新失败："+e.Message;next=DateTimeOffset.Now.AddMinutes(5);}
         finally{sync.Release();Changed();}
     }
@@ -165,7 +184,7 @@ internal sealed class ReadingService:IDisposable
         if(usage.Any(u=>u.InputTokens==null||u.OutputTokens==null))QueueStatus+="（部分用量未知）";QueueUpdated?.Invoke();
     }
     internal Task StartNow(bool refresh=false)=>Task.Run(async()=>{
-        if(refresh)await Refresh();
+        if(refresh)await Refresh(true);
         await dispatch.WaitAsync(stop.Token);
         try{BuildBatch(true,DateTime.Today);}finally{dispatch.Release();}
     });

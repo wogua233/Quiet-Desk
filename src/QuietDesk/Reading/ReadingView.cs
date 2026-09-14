@@ -218,7 +218,8 @@ internal sealed partial class ReadingView:UserControl
         var pagePanel=new DockPanel();
         var heading=Stack();heading.Children.Add(Ui.Text("选择你的刊物",24,"#FCFCFC"));heading.Children.Add(Ui.Text("首次获取最近七天可取得的条目。来源受限时会明确显示，不代表没有新文章。"));
         var search=new TextBox{Text=sourceSearch,ToolTip="搜索刊物",Margin=new Thickness(0,12,0,8)};heading.Children.Add(Ui.Text("搜索刊物",12));heading.Children.Add(search);
-        heading.Children.Add(ActionButton("刷新并翻译总结",async()=>await StartBatch(true)));
+        heading.Children.Add(ActionButton("仅刷新订阅",async()=>{try{await model.Service!.Refresh(true);}catch(Exception e){status.Text=e.Message;}}));
+        heading.Children.Add(Ui.Text("只检查来源，不调用 AI；未订阅的刊物可单独重新检查。",12));
         DockPanel.SetDock(heading,Dock.Top);pagePanel.Children.Add(heading);
         var contents=Stack();sourcesPanel=Stack();contents.Children.Add(sourcesPanel);search.TextChanged+=(_,_)=>{sourceSearch=search.Text;RefreshSources();};
         var custom=new Expander{Header="添加自定义 RSS／Atom",Foreground=Ui.B("#FCFCFC")};var form=Stack();
@@ -232,8 +233,13 @@ internal sealed partial class ReadingView:UserControl
         foreach(var source in model.Service.Sources().Where(s=>s.Name.Contains(sourceSearch,StringComparison.OrdinalIgnoreCase)))
         {
             var row=Stack();var check=new CheckBox{Content=source.Name,IsChecked=source.Subscribed,FontSize=14,Foreground=Ui.B("#FCFCFC")};
-            check.Click+=(_,_)=>{source.Subscribed=check.IsChecked==true;model.Service.SaveSource(source);};row.Children.Add(check);Ui.Gap(row,6);
-            row.Children.Add(Ui.Text(source.Status,12,source.Failures>0?"#F0A9C8":"#C2BEC8"));row.Children.Add(Ui.Text("最近成功："+(source.LastSuccess?.ToLocalTime().ToString("g")??"尚无")+" · 来源条目 "+source.ArticleCount,12));
+            check.Click+=(_,_)=>{source.Subscribed=check.IsChecked==true;model.Service.SaveSource(source);};
+            bool checking=model.Service.IsCheckingSource(source.Id);
+            var head=new DockPanel();var retry=ActionButton(checking?"正在检查…":"重新检查",async()=>{try{await model.Service.CheckSource(source.Id);}catch(Exception e){status.Text=e.Message;}});retry.IsEnabled=!checking;retry.ToolTip="只检查此来源，不改变订阅选择，不调用 AI";DockPanel.SetDock(retry,Dock.Right);head.Children.Add(retry);head.Children.Add(check);row.Children.Add(head);Ui.Gap(row,6);
+            string state=checking?"正在请求来源…":(!source.Subscribed?"未订阅 · 不自动检查\n":"")+(source.Failures>0?"最近一次检查失败："+source.Status.Replace("更新失败：",""):source.Status);
+            row.Children.Add(Ui.Text(state,12,!checking&&source.Failures>0?"#F0A9C8":"#C2BEC8"));
+            if(!checking&&source.Subscribed&&source.NextAttempt.HasValue)row.Children.Add(Ui.Text("自动重试不早于 "+source.NextAttempt.Value.ToLocalTime().ToString("MM-dd HH:mm")+"；可点击重新检查。",12));
+            row.Children.Add(Ui.Text("最近成功："+(source.LastSuccess?.ToLocalTime().ToString("g")??"尚无")+" · 来源条目 "+source.ArticleCount,12));
             var card=Ui.Panel(row,new Thickness(14));card.Margin=new Thickness(0,0,0,10);sourcesPanel.Children.Add(card);
         }
     }

@@ -83,6 +83,7 @@ internal static class ReadingVerification
         Check(ordering.LatestDay(ReadingCatalog.SubscribedFilter)=="2026-09-14","latest date respects subscribed scope");
         ordering.Put("source","a",new Source{Id="a",Subscribed=false});Check(ordering.Query("2026-09-14",ReadingCatalog.SubscribedFilter,false,false,0,false,true).Count==0,"unsubscribing immediately removes items from subscribed view");
         using(var defaults=new ReadingViewModel(Path.Combine(dir,"filter-defaults")))Check(defaults.SourceId==ReadingCatalog.SubscribedFilter&&defaults.NewestFirst&&!defaults.SortByJournal,"view defaults to subscribed publications and newest first");
+        SourceVerification.Checks(Path.Combine(dir,"source-tests"),lines).GetAwaiter().GetResult();
         AiVerification.Checks(Path.Combine(dir,"ai-tests"),lines).GetAwaiter().GetResult();
         File.WriteAllLines(output,lines);return 0;
     }catch(Exception e){lines.Add("FAIL "+e);File.WriteAllLines(output,lines);return 1;}}

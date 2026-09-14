@@ -1,0 +1,83 @@
+PASS RSS dates, HTML cleaning and parsing
+PASS DOI identity and tracking normalization
+PASS external XML entities rejected
+PASS feed DOCTYPE ignored without fetching an external DTD
+PASS HTML challenge with DOCTYPE diagnosed before parsing malformed HTML body
+PASS internal DTD entities are not expanded
+PASS current-user secret protection
+PASS SQLite duplicate identity upsert
+PASS persisted daily quota and day rollover
+PASS disabled module creates no database or polling
+PASS compatible API response parsing
+PASS API payload excludes secrets and tool execution
+PASS rate limit is explicit and not retried
+PASS Atom update time is not misreported as publication time
+PASS retention removes expired ordinary items but preserves favorites
+PASS database date filtering and paging
+PASS legacy settings retain encrypted key and automatic choice without imposing an AI quota
+PASS later user quota survives restart
+PASS legacy tasks and owned cache removed without touching original PDF
+PASS migration preserves summaries and favorites
+PASS valid empty feed is an empty result
+PASS challenge HTML is a source failure
+PASS feed full content is not treated as abstract
+PASS unread filter evaluated before pagination
+PASS no full-text worker in release assembly
+PASS simultaneous manual generation is deduplicated after serial gate
+PASS old summary cache is reused without regeneration
+PASS service has no ten-article generation cap
+PASS APS authors removed and truncated excerpt cannot trigger summary
+PASS recent week shows Friday journal on Monday, respects boundary and includes unknown-date discovery
+PASS empty date reports latest stored publication
+PASS official Nature encoded standfirst excludes metadata header
+PASS view defaults to recent week
+PASS JACS migration preserves subscription and clears stale request/backoff state
+PASS JACS migration does not overwrite a customized URL
+PASS subscribed filter excludes unsubscribed cached articles and defaults to newest publication
+PASS all publications remains explicit opt-in
+PASS oldest publication first ignores later discovery order
+PASS journal name sorting precedes time ordering
+PASS latest date respects subscribed scope
+PASS unsubscribing immediately removes items from subscribed view
+PASS view defaults to subscribed publications and newest first
+PASS single source failure retains unsubscribed choice and sets retry state
+PASS automatic refresh reports sources skipped for backoff
+PASS manual refresh bypasses source backoff and replaces failure after success
+PASS stale subscription checkbox does not overwrite fresh connection result
+PASS single source check works when unsubscribed and treats 304 as successful check
+PASS in-flight source check exposes busy state
+PASS duplicate single-source check does not send another request
+PASS source-only check clears busy state without creating AI jobs
+PASS bilingual migration defaults existing subscriptions to JACS only
+PASS one combined request and concurrent click deduplication
+PASS three Chinese fields saved independently
+PASS non-thinking JSON request excludes tools and secrets from body
+PASS reported input output and cache-hit usage retained
+PASS opening completed bilingual cache uses no API
+PASS legacy summary requests only missing translation
+PASS legacy summary retained after translation
+PASS insufficient abstract produces title translation only
+PASS unchanged feed does not destroy supplemented abstract or cache
+PASS content revision retains old display and invalidates all affected results
+PASS cache identity includes model
+PASS invalid AI response cannot be marked complete
+PASS invalid AI response cannot be marked complete
+PASS invalid AI response cannot be marked complete
+PASS truncated output retains incomplete state
+PASS malformed API response is persisted as incomplete
+PASS cloud timeout does not cancel the reading scheduler or mark result complete
+PASS automatic scope uses discovery day when unknown and excludes eighth day
+PASS idle CPU battery saver and presentation gates
+PASS scheduled time never invented when empty
+PASS specified time is earliest eligible time
+PASS automatic batch waits for idle
+PASS idle starts daily batch
+PASS pause prevents next dispatch
+PASS queue pause survives restart
+PASS manual start bypasses idle and resumes only incomplete work
+PASS late items wait after daily snapshot finishes
+PASS unsubscribe is checked before dispatch
+PASS pause allows in-flight cloud result to finish
+PASS global rate limit backoff prevents dispatching another queued article
+PASS next local day starts a new batch without repeating completed work
+PASS JACS-only migration does not repeat after user subscription changes
