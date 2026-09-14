@@ -13,7 +13,26 @@ internal sealed class ReadingStore
     private SqliteConnection Open(){var c=new SqliteConnection(new SqliteConnectionStringBuilder{DataSource=Path.Combine(DirectoryPath,"reading.db"),Pooling=false}.ToString());c.Open();return c;}
     internal List<T> Load<T>(string kind){lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="SELECT json FROM objects WHERE kind=$k";cmd.Parameters.AddWithValue("$k",kind);using var r=cmd.ExecuteReader();var list=new List<T>();while(r.Read()){var item=JsonSerializer.Deserialize<T>(r.GetString(0));if(item!=null)list.Add(item);}return list;}}
     internal T? Find<T>(string kind,string id){lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="SELECT json FROM objects WHERE kind=$k AND id=$i";cmd.Parameters.AddWithValue("$k",kind);cmd.Parameters.AddWithValue("$i",id);var json=cmd.ExecuteScalar() as string;return json==null?default:JsonSerializer.Deserialize<T>(json);}}
-    internal List<Article> Query(string day,string source,bool discovered,bool favorites,int offset,bool unread=false,bool recent=false,ArticleOrder order=ArticleOrder.Newest){lock(gate){using var c=Open();using var cmd=c.CreateCommand();cmd.CommandText="SELECT json FROM objects WHERE kind='article' AND ($s='' OR json_extract(json,'$.SourceId')=$s OR ($s='@subscribed' AND json_extract(json,'$.SourceId') IN (SELECT id FROM objects WHERE kind='source' AND json_extract(json,'$.Subscribed')=1))) AND ($unread=0 OR json_extract(json,'$.Read')=0) AND ($fav=1 AND json_extract(json,'$.Favorite')=1 OR $fav=0 AND (($recent=0 AND substr(json_extract(json,$date),1,10)=$d) OR ($recent=1 AND substr(COALESCE(json_extract(json,$date),json_extract(json,'$.Discovered')),1,10) BETWEEN $from AND $d))) ORDER BY "+OrderSql(order)+" LIMIT 200 OFFSET $o";cmd.Parameters.AddWithValue("$s",source);cmd.Parameters.AddWithValue("$fav",favorites?1:0);cmd.Parameters.AddWithValue("$unread",unread?1:0);cmd.Parameters.AddWithValue("$date",discovered?"$.Discovered":"$.PublishedDay");cmd.Parameters.AddWithValue("$d",day);cmd.Parameters.AddWithValue("$from",DateTime.ParseExact(day,"yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture).AddDays(-6).ToString("yyyy-MM-dd"));cmd.Parameters.AddWithValue("$recent",recent?1:0);cmd.Parameters.AddWithValue("$o",offset);using var r=cmd.ExecuteReader();var list=new List<Article>();while(r.Read())list.Add(JsonSerializer.Deserialize<Article>(r.GetString(0))!);return list;}}
+    internal const int PageSize=200;
+    private const string ArticleFilter="kind='article' AND ($s='' OR json_extract(json,'$.SourceId')=$s OR ($s='@subscribed' AND json_extract(json,'$.SourceId') IN (SELECT id FROM objects WHERE kind='source' AND json_extract(json,'$.Subscribed')=1))) AND ($unread=0 OR json_extract(json,'$.Read')=0) AND ($fav=1 AND json_extract(json,'$.Favorite')=1 OR $fav=0 AND (($recent=0 AND substr(json_extract(json,$date),1,10)=$d) OR ($recent=1 AND substr(COALESCE(json_extract(json,$date),json_extract(json,'$.Discovered')),1,10) BETWEEN $from AND $d)))";
+    internal List<Article> Query(string day,string source,bool discovered,bool favorites,int offset,bool unread=false,bool recent=false,ArticleOrder order=ArticleOrder.Newest)=>QueryPage(day,source,discovered,favorites,offset,unread,recent,order).Articles;
+    internal ArticlePage QueryPage(string day,string source,bool discovered,bool favorites,int offset,bool unread=false,bool recent=false,ArticleOrder order=ArticleOrder.Newest)
+    {
+        lock(gate){
+            using var c=Open();using var tx=c.BeginTransaction(deferred:true);using var cmd=c.CreateCommand();cmd.Transaction=tx;
+            cmd.Parameters.AddWithValue("$s",source);cmd.Parameters.AddWithValue("$fav",favorites?1:0);cmd.Parameters.AddWithValue("$unread",unread?1:0);
+            cmd.Parameters.AddWithValue("$date",discovered?"$.Discovered":"$.PublishedDay");cmd.Parameters.AddWithValue("$d",day);
+            cmd.Parameters.AddWithValue("$from",DateTime.ParseExact(day,"yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture).AddDays(-6).ToString("yyyy-MM-dd"));cmd.Parameters.AddWithValue("$recent",recent?1:0);
+            cmd.CommandText="SELECT COUNT(*) FROM objects WHERE "+ArticleFilter;
+            int total=Convert.ToInt32(cmd.ExecuteScalar());
+            offset=Math.Clamp(offset,0,total==0?0:(total-1)/PageSize*PageSize);
+            cmd.Parameters.AddWithValue("$o",offset);cmd.Parameters.AddWithValue("$limit",PageSize);
+            cmd.CommandText="SELECT json FROM objects WHERE "+ArticleFilter+" ORDER BY "+OrderSql(order)+" LIMIT $limit OFFSET $o";
+            var articles=new List<Article>();
+            using(var r=cmd.ExecuteReader())while(r.Read()){var article=JsonSerializer.Deserialize<Article>(r.GetString(0))!;article.ListNumber=offset+articles.Count+1;articles.Add(article);}
+            tx.Commit();return new ArticlePage(articles,total,offset);
+        }
+    }
     private static string OrderSql(ArticleOrder order){
         string direction=order==ArticleOrder.Oldest?"ASC":"DESC";
         string time="json_extract(json,$date) IS NULL, julianday(json_extract(json,$date)) "+direction+", julianday(json_extract(json,'$.Discovered')) "+direction+", id ASC";

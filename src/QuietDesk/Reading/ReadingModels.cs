@@ -32,6 +32,10 @@ public sealed class Source
 }
 public sealed class Article
 {
+    [System.Text.Json.Serialization.JsonIgnore]
+    public int ListNumber {get;set;}
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string NumberedTitle=>(ListNumber>0?$"{ListNumber}. ":"阅读中 · ")+DisplayTitle;
     public string Id {get;set;}="";public string SourceId {get;set;}="";public string SourceName {get;set;}="";public string Title {get;set;}="";
     public string ChineseTitle {get;set;}="";public string Url {get;set;}="";public string Doi {get;set;}="";public string Abstract {get;set;}="";
     public string? PublishedDay {get;set;} public string DateEvidence {get;set;}="";public DateTimeOffset Discovered {get;set;}=DateTimeOffset.Now;

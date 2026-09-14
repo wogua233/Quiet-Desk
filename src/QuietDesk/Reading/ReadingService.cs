@@ -65,6 +65,7 @@ internal sealed class ReadingService:IDisposable
     internal List<Source> Sources()=>store.Load<Source>("source");
     internal List<Article> Articles()=>store.Load<Article>("article");
     internal List<Article> Query(string day,string source,bool discovered,bool favorites,int offset,bool unread=false,bool recent=false,ArticleOrder order=ArticleOrder.Newest)=>store.Query(day,source,discovered,favorites,offset,unread,recent,order);
+    internal ArticlePage QueryPage(string day,string source,bool discovered,bool favorites,int offset,bool unread=false,bool recent=false,ArticleOrder order=ArticleOrder.Newest)=>store.QueryPage(day,source,discovered,favorites,offset,unread,recent,order);
     internal string LatestDay(string source)=>store.LatestDay(source);
     internal void SaveSource(Source s){var latest=store.Find<Source>("source",s.Id);if(latest!=null){latest.Subscribed=s.Subscribed;s=latest;}store.Put("source",s.Id,s);next=DateTimeOffset.MinValue;Changed();}
     internal void RemoveSource(Source s){s.Subscribed=false;SaveSource(s);if(s.Id.StartsWith("custom-"))store.Delete("source",s.Id);}

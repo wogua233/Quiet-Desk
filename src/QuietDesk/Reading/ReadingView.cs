@@ -33,6 +33,7 @@ internal sealed partial class ReadingView:UserControl
     private FrameworkElement? listPane;
     private ContentControl? reader;
     private TextBlock? empty;private TextBlock? rangeLabel;
+    private Button? previousPage,nextPage;
     private StackPanel? sourcesPanel;
     private string sourceSearch="";
     private Article? selected;private string detailKey="",detailId="";
@@ -109,8 +110,8 @@ internal sealed partial class ReadingView:UserControl
         var left=new DockPanel{Margin=new Thickness(0,0,12,0)};
         var footer=new WrapPanel{Margin=new Thickness(0,4,0,0)};
         rangeLabel=Ui.Text("",12);rangeLabel.VerticalAlignment=VerticalAlignment.Center;rangeLabel.Margin=new Thickness(4,0,8,4);
-        footer.Children.Add(ActionButton("上一页",()=>{model.Offset=Math.Max(0,model.Offset-200);selected=null;model.SelectedId="";model.ScrollOffset=0;RefreshList();}));
-        footer.Children.Add(ActionButton("下一页",()=>{if(list?.Items.Count==200){model.Offset+=200;selected=null;model.SelectedId="";model.ScrollOffset=0;RefreshList();}}));
+        previousPage=ActionButton("上一页",()=>{model.Offset=Math.Max(0,model.Offset-ReadingStore.PageSize);selected=null;model.SelectedId="";model.ScrollOffset=0;RefreshList();});footer.Children.Add(previousPage);
+        nextPage=ActionButton("下一页",()=>{model.Offset+=ReadingStore.PageSize;selected=null;model.SelectedId="";model.ScrollOffset=0;RefreshList();});footer.Children.Add(nextPage);
         footer.Children.Add(rangeLabel);DockPanel.SetDock(footer,Dock.Bottom);left.Children.Add(footer);
         var listArea=new Grid();
         list=new ListBox{Background=Brushes.Transparent,BorderThickness=new Thickness(0),Foreground=Ui.B("#FCFCFC"),HorizontalContentAlignment=HorizontalAlignment.Stretch};
@@ -127,7 +128,7 @@ internal sealed partial class ReadingView:UserControl
         }
         itemStyle.Setters.Add(new Setter(Control.TemplateProperty,template));list.ItemContainerStyle=itemStyle;
         var stack=new FrameworkElementFactory(typeof(StackPanel));
-        foreach(var pair in new[]{("DisplayTitle",14.0,"#FCFCFC"),("EnglishSubtitle",12.0,"#B0ABB5"),("DisplayMeta",12.0,"#ADA8B1"),("Status",12.0,"#DBA5BE")})
+        foreach(var pair in new[]{("NumberedTitle",14.0,"#FCFCFC"),("EnglishSubtitle",12.0,"#B0ABB5"),("DisplayMeta",12.0,"#ADA8B1"),("Status",12.0,"#DBA5BE")})
         {
             var text=new FrameworkElementFactory(typeof(TextBlock));text.SetBinding(TextBlock.TextProperty,new Binding(pair.Item1));text.SetValue(TextBlock.TextWrappingProperty,TextWrapping.Wrap);
             text.SetValue(TextBlock.FontSizeProperty,pair.Item2);text.SetValue(TextBlock.ForegroundProperty,Ui.B(pair.Item3));text.SetValue(FrameworkElement.MarginProperty,new Thickness(0,0,0,6));stack.AppendChild(text);
@@ -143,13 +144,15 @@ internal sealed partial class ReadingView:UserControl
     {
         if(list==null||model.Service==null||page!=0)return;
         var id=selected?.Id??model.SelectedId;var scroll=Child<ScrollViewer>(list);double offset=scroll?.VerticalOffset??model.ScrollOffset;
-        var articles=model.Service.Query(model.SelectedDay.ToString("yyyy-MM-dd"),model.SourceId,model.Discovered,model.Favorites,model.Offset,model.Unread,model.Recent,model.SortByJournal?ArticleOrder.Journal:model.NewestFirst?ArticleOrder.Newest:ArticleOrder.Oldest);
+        var result=model.Service.QueryPage(model.SelectedDay.ToString("yyyy-MM-dd"),model.SourceId,model.Discovered,model.Favorites,model.Offset,model.Unread,model.Recent,model.SortByJournal?ArticleOrder.Journal:model.NewestFirst?ArticleOrder.Newest:ArticleOrder.Oldest);
+        model.Offset=result.Offset;var articles=result.Articles.ToList();
+        if(rangeLabel!=null){rangeLabel.Text=result.CountText;rangeLabel.ToolTip=result.RangeText;}
+        if(previousPage!=null)previousPage.IsEnabled=result.HasPrevious;if(nextPage!=null)nextPage.IsEnabled=result.HasNext;
         // Keep the actively read item visible until the user changes a filter.
-        if(model.Unread&&selected!=null&&(model.SourceId!=ReadingCatalog.SubscribedFilter||model.Service.Sources().Any(s=>s.Id==selected.SourceId&&s.Subscribed))&&selected.Id==model.SelectedId&&!articles.Any(a=>a.Id==selected.Id))articles.Insert(0,selected);
+        if(model.Unread&&selected!=null&&(model.SourceId!=ReadingCatalog.SubscribedFilter||model.Service.Sources().Any(s=>s.Id==selected.SourceId&&s.Subscribed))&&selected.Id==model.SelectedId&&!articles.Any(a=>a.Id==selected.Id)){selected.ListNumber=0;articles.Insert(0,selected);if(rangeLabel!=null)rangeLabel.ToolTip=result.RangeText+"；另保留正在阅读的已读文章，不计入未读数量。";}
         refreshing=true;list.ItemsSource=articles;var match=articles.FirstOrDefault(a=>a.Id==id);list.SelectedItem=match;refreshing=false;
         var subscribed=model.Service.Sources().Where(s=>s.Subscribed).ToList();
         var relevant=subscribed.Where(s=>model.SourceId.Length==0||model.SourceId==ReadingCatalog.SubscribedFilter||s.Id==model.SourceId).ToList();
-        if(rangeLabel!=null)rangeLabel.Text=$"{articles.Count} 篇";
         string sourceName=model.SourceId==ReadingCatalog.SubscribedFilter?"订阅刊物":model.SourceId.Length==0?"全部刊物":model.Service.Sources().FirstOrDefault(s=>s.Id==model.SourceId)?.Name??"刊物";
         sourcePicker.Content=new TextBlock{Text=sourceName,TextTrimming=TextTrimming.CharacterEllipsis,TextWrapping=TextWrapping.NoWrap};sourcePicker.ToolTip="选择刊物："+sourceName;
         System.Windows.Automation.AutomationProperties.SetName(sourcePicker,"选择刊物："+sourceName);
