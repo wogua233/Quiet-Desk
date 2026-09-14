@@ -5,7 +5,9 @@ import argparse, subprocess, importlib.util, json, hashlib
 root=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('audit_release',root/'scripts/audit-release.py')
 audit_module=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit_module)
-ap=argparse.ArgumentParser();ap.add_argument('--version',default='0.5.6');ap.add_argument('--compiler',type=Path,default=root/'.tools/nsis-3.12/makensis.exe');ap.add_argument('--qa',action='store_true');args=ap.parse_args()
+ap=argparse.ArgumentParser();ap.add_argument('--version',default='0.5.6-beta');ap.add_argument('--compiler',type=Path,default=root/'.tools/nsis-3.12/makensis.exe');ap.add_argument('--qa',action='store_true');args=ap.parse_args()
+numeric_version=args.version.split('-',1)[0]
+display_version=args.version.replace('-beta',' Beta')
 release=root/f'artifacts/QuietDesk-v{args.version}-win-x64'
 if not (release/'QuietDesk.exe').is_file():raise SystemExit('Publish and package release first.')
 if not args.compiler.is_file():raise SystemExit('NSIS 3.12 portable compiler required; see docs/INSTALLER.md.')
@@ -28,7 +30,7 @@ for name,lines in [('install.nsh',install),('uninstall.nsh',uninstall)]: (work/n
 (work/'payload-manifest.json').write_text(json.dumps(manifest,indent=2),encoding='utf-8')
 (work/'credential-audit.json').write_text(json.dumps(audit,indent=2),encoding='utf-8')
 output=root/f'artifacts/QuietDesk-{args.version}-Setup{ "-QA" if args.qa else ""}.exe'
-command=[str(args.compiler.resolve()),'/V2',f'/DVERSION={args.version}',f'/DRELEASE={release}',f'/DOUTPUT={output}',f'/DINSTALL_MANIFEST={work / "install.nsh"}',f'/DUNINSTALL_MANIFEST={work / "uninstall.nsh"}']
+command=[str(args.compiler.resolve()),'/V2',f'/DVERSION={numeric_version}',f'/DDISPLAY_VERSION={display_version}',f'/DRELEASE={release}',f'/DOUTPUT={output}',f'/DINSTALL_MANIFEST={work / "install.nsh"}',f'/DUNINSTALL_MANIFEST={work / "uninstall.nsh"}']
 if args.qa:command+=['/DQA','/DPRODUCT_KEY=QuietDesk-Installer-QA']
 command.append(str(root/'scripts/installer.nsi'))
 subprocess.run(command,check=True,cwd=root,creationflags=subprocess.CREATE_NO_WINDOW|subprocess.BELOW_NORMAL_PRIORITY_CLASS)

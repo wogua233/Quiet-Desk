@@ -1,6 +1,6 @@
-# Windows 安装与升级
+# Windows 安装与升级（0.5.6 Beta）
 
-推荐使用 `QuietDesk-0.5.6-Setup.exe`。简体中文向导，默认安装到当前 Windows 用户的 `%LOCALAPPDATA%\Programs\QuietDesk`，创建桌面及开始菜单快捷方式。运行库、18 种离线声音和已列明许可的解码器随包提供，不需要另外安装 .NET，不需要管理员权限。
+推荐使用 `QuietDesk-0.5.6-beta-Setup.exe`。简体中文向导，默认安装到当前 Windows 用户的 `%LOCALAPPDATA%\Programs\QuietDesk`，创建桌面及开始菜单快捷方式。运行库、18 种离线声音和已列明许可的解码器随包提供，不需要另外安装 .NET，不需要管理员权限。
 
 安装前从静隅托盘菜单选择“退出”；安装器会检测已运行实例并提示，不强制结束音乐或覆盖运行中的程序。安装完成后从快捷方式启动。默认不开机启动、不自动播放音乐；按键轻音效默认开启，设置中可以关闭。0.5.6 首次升级将旧配置的轻音效开启一次，此后保存的关闭选择会保留。
 
@@ -18,7 +18,7 @@
 python scripts/build-installer.py
 ```
 
-输出位于 `artifacts/QuietDesk-0.5.6-Setup.exe`，同时提供便携包 `QuietDesk-win-x64.zip` 和源码包 `QuietDesk-source.zip`。Python 不在 PATH 时可为 `package.ps1` 传入 `-Python <python.exe 路径>`。
+输出位于 `artifacts/QuietDesk-0.5.6-beta-Setup.exe`，同时提供便携包 `QuietDesk-0.5.6-beta-win-x64.zip` 和源码包 `QuietDesk-0.5.6-beta-source.zip`。Python 不在 PATH 时可为 `package.ps1` 传入 `-Python <python.exe 路径>`。
 
 `build-installer.py` 在压缩前对发布目录执行凭据检查，生成精确安装／卸载清单和每文件 SHA256。`package.ps1` 同样检查便携包和源码包的暂存内容。检测到用户数据库、配置、日志、证书私钥、明文服务密钥样式或非空 DPAPI 配置值时中止打包。它们不会读取本机实际的 API 配置。检查程序保存在 `scripts/audit-release.py`，合成凭据回归测试为 `python scripts/test-release-audit.py`。
 

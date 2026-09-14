@@ -1,7 +1,7 @@
 param([string]$Python='python')
 $ErrorActionPreference='Stop'
 $projectRoot=Split-Path -Parent $PSScriptRoot
-$release=Join-Path $projectRoot 'artifacts\QuietDesk-v0.5.6-win-x64'
+$release=Join-Path $projectRoot 'artifacts\QuietDesk-v0.5.6-beta-win-x64'
 if(-not (Test-Path -LiteralPath (Join-Path $release 'QuietDesk.exe'))){throw 'Publish the release first.'}
 Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md') -Destination (Join-Path $release 'README.md')
 $releaseDocs=Join-Path $release 'docs'
@@ -9,7 +9,7 @@ New-Item -ItemType Directory -Path $releaseDocs -Force | Out-Null
 Get-ChildItem -LiteralPath (Join-Path $projectRoot 'docs') | Copy-Item -Destination $releaseDocs -Recurse -Force
 & $Python (Join-Path $PSScriptRoot 'audit-release.py') $release
 if($LASTEXITCODE -ne 0){throw 'Release credential audit failed; packaging stopped.'}
-Compress-Archive -Path (Join-Path $release '*') -DestinationPath (Join-Path $projectRoot 'artifacts\QuietDesk-win-x64.zip') -Force
+Compress-Archive -Path (Join-Path $release '*') -DestinationPath (Join-Path $projectRoot 'artifacts\QuietDesk-0.5.6-beta-win-x64.zip') -Force
 $stage=Join-Path $projectRoot ('artifacts\source-'+[DateTime]::Now.ToString('yyyyMMddHHmmss'))
 New-Item -ItemType Directory -Path $stage | Out-Null
 foreach($folder in @('src','docs','scripts')){
@@ -23,5 +23,5 @@ foreach($folder in @('src','docs','scripts')){
 foreach($file in @('README.md','global.json','.gitignore')){Copy-Item -LiteralPath (Join-Path $projectRoot $file) -Destination (Join-Path $stage $file)}
 & $Python (Join-Path $PSScriptRoot 'audit-release.py') $stage
 if($LASTEXITCODE -ne 0){throw 'Source credential audit failed; packaging stopped.'}
-Compress-Archive -Path (Join-Path $stage '*') -DestinationPath (Join-Path $projectRoot 'artifacts\QuietDesk-source.zip') -Force
-Get-FileHash -LiteralPath (Join-Path $projectRoot 'artifacts\QuietDesk-win-x64.zip'),(Join-Path $projectRoot 'artifacts\QuietDesk-source.zip') -Algorithm SHA256 | Format-Table -AutoSize
+Compress-Archive -Path (Join-Path $stage '*') -DestinationPath (Join-Path $projectRoot 'artifacts\QuietDesk-0.5.6-beta-source.zip') -Force
+Get-FileHash -LiteralPath (Join-Path $projectRoot 'artifacts\QuietDesk-0.5.6-beta-win-x64.zip'),(Join-Path $projectRoot 'artifacts\QuietDesk-0.5.6-beta-source.zip') -Algorithm SHA256 | Format-Table -AutoSize

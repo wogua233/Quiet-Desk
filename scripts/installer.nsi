@@ -5,10 +5,13 @@
 !ifndef VERSION
 !define VERSION "0.5.6"
 !endif
+!ifndef DISPLAY_VERSION
+!define DISPLAY_VERSION "0.5.6 Beta"
+!endif
 !ifndef PRODUCT_KEY
 !define PRODUCT_KEY "QuietDesk"
 !endif
-Name "静隅 QuietDesk ${VERSION}"
+Name "静隅 QuietDesk ${DISPLAY_VERSION}"
 OutFile "${OUTPUT}"
 InstallDir "$LOCALAPPDATA\Programs\${PRODUCT_KEY}"
 InstallDirRegKey HKCU "Software\${PRODUCT_KEY}" "InstallDir"
@@ -18,6 +21,7 @@ VIProductVersion "${VERSION}.0"
 VIAddVersionKey /LANG=2052 "ProductName" "静隅 QuietDesk"
 VIAddVersionKey /LANG=2052 "FileDescription" "静隅安装向导"
 VIAddVersionKey /LANG=2052 "FileVersion" "${VERSION}"
+VIAddVersionKey /LANG=2052 "ProductVersion" "${DISPLAY_VERSION}"
 VIAddVersionKey /LANG=2052 "LegalCopyright" "QuietDesk contributors"
 !define MUI_ICON "${RELEASE}\Assets\quietdesk.ico"
 !define MUI_UNICON "${RELEASE}\Assets\quietdesk.ico"
@@ -70,7 +74,7 @@ Section "静隅" SEC_MAIN
  CreateShortcut "$DESKTOP\${PRODUCT_KEY}.lnk" "$INSTDIR\QuietDesk.exe" "" "$INSTDIR\Assets\quietdesk.ico"
  WriteRegStr HKCU "Software\${PRODUCT_KEY}" "InstallDir" "$INSTDIR"
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_KEY}" "DisplayName" "静隅 QuietDesk"
- WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_KEY}" "DisplayVersion" "${VERSION}"
+ WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_KEY}" "DisplayVersion" "${DISPLAY_VERSION}"
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_KEY}" "Publisher" "QuietDesk"
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_KEY}" "DisplayIcon" "$INSTDIR\Assets\quietdesk.ico"
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_KEY}" "InstallLocation" "$INSTDIR"
