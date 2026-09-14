@@ -2,7 +2,7 @@
 
 适合工作与学习时使用的 Windows 桌面音乐播放器。采用原生 WPF 界面，以中性深灰与柔粉色为主，支持真正嵌入桌面的紧凑组件。
 
-当前版本 **0.5.1**：阅读顶部改为紧凑工具栏，日期与排序按需展开；阅读时隐藏音乐栏，为文章列表和正文留出更多空间。保留双语标题、中文摘要译文、中文总结及空闲 AI 队列。详见 [阅读使用说明](docs/READING.md)、[提示词与缓存](docs/READING-AI.md) 和 [验证记录](docs/validation-v051.md)。
+当前版本 **0.5.2**：修正带 DOCTYPE 的订阅响应处理，收到验证或错误网页时显示中文原因；保留紧凑阅读工具栏和阅读时隐藏音乐栏的布局。支持双语标题、中文摘要译文、中文总结及空闲 AI 队列。详见 [阅读使用说明](docs/READING.md)、[提示词与缓存](docs/READING-AI.md) 和 [验证记录](docs/validation-v052.md)。
 
 ## 主要功能
 
@@ -28,7 +28,7 @@
 ./scripts/build.ps1 -Publish
 
 # 运行
-./artifacts/QuietDesk-v0.5.1-win-x64/QuietDesk.exe
+./artifacts/QuietDesk-v0.5.2-win-x64/QuietDesk.exe
 
 # 打包便携版与源码
 ./scripts/package.ps1

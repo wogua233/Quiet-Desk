@@ -20,7 +20,12 @@ internal static class ReadingContent
     internal static string Canonical(string url){if(!ReadingCatalog.Http(url))return "";var u=new UriBuilder(url){Fragment=""};u.Query=string.Join("&",u.Query.TrimStart('?').Split('&',StringSplitOptions.RemoveEmptyEntries).Where(s=>!s.StartsWith("utm_",StringComparison.OrdinalIgnoreCase)));return u.Uri.AbsoluteUri;}
     internal static List<Article> Parse(byte[] bytes,Source source)
     {
-        using var stream=new MemoryStream(bytes);using var xr=XmlReader.Create(stream,new XmlReaderSettings{DtdProcessing=DtdProcessing.Prohibit,XmlResolver=null,MaxCharactersInDocument=4_000_000});var doc=XDocument.Load(xr);if(doc.Root?.Name.LocalName is not ("rss" or "RDF" or "feed"))throw new IOException("返回内容不是 RSS／Atom 订阅源。");var list=new List<Article>();
+        // Skip declarations without evaluating DTDs or resolving external resources.
+        using var stream=new MemoryStream(bytes);using var xr=XmlReader.Create(stream,new XmlReaderSettings{DtdProcessing=DtdProcessing.Ignore,XmlResolver=null,MaxCharactersInDocument=4_000_000});
+        xr.MoveToContent();
+        if(xr.LocalName.Equals("html",StringComparison.OrdinalIgnoreCase))throw new IOException("来源返回了网页，而不是订阅内容（可能是验证、登录或临时错误页）。请稍后重试；已有文章仍可阅读。");
+        if(xr.LocalName is not ("rss" or "RDF" or "feed"))throw new IOException("返回内容不是 RSS／Atom 订阅源。");
+        var doc=XDocument.Load(xr);var list=new List<Article>();
         foreach(var item in doc.Descendants().Where(x=>x.Name.LocalName is "item" or "entry").Take(1000)){
             string V(params string[] names)=>item.Elements().FirstOrDefault(x=>names.Contains(x.Name.LocalName))?.Value.Trim()??"";
             var link=item.Elements().FirstOrDefault(x=>x.Name.LocalName=="link"&&(x.Attribute("rel")?.Value is null or "alternate"));var url=Canonical(link?.Attribute("href")?.Value??link?.Value??"");if(url.Length==0)continue;
