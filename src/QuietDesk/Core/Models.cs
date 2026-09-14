@@ -49,7 +49,8 @@ public sealed class SavedState
     public int Version {get;set;}=3;
     public string? OutputDeviceId {get;set;}
     public double DesktopOpacity {get;set;}=.88;public double Master {get;set;}=.45;public double MediaVolume {get;set;}=.6;
-    public bool FeedbackEnabled {get;set;}=false;public double FeedbackVolume {get;set;}=.2;public bool ReduceMotion {get;set;}=false;public bool OnboardingSeen {get;set;}=false;
+    public int FeedbackDefaultsVersion {get;set;}
+    public bool FeedbackEnabled {get;set;}=true;public double FeedbackVolume {get;set;}=.2;public bool ReduceMotion {get;set;}=false;public bool OnboardingSeen {get;set;}=false;
     public int FocusMinutes {get;set;}=25;public bool LoopQueue {get;set;}=true;
     public Dictionary<string,double> Levels {get;set;}=new(){{"rain",.5}};
     public List<Scene> Scenes {get;set;}=new();public List<Station> Favorites {get;set;}=new();
@@ -62,9 +63,10 @@ public sealed class StateStore
     public StateStore(string path) {DirectoryPath=path;Directory.CreateDirectory(path);}
     public SavedState Load()
     {
-        var file=Path.Combine(DirectoryPath,"state.json"); if(!File.Exists(file))return new();
+        var file=Path.Combine(DirectoryPath,"state.json"); if(!File.Exists(file))return new(){FeedbackDefaultsVersion=1};
         try {
             var s=JsonSerializer.Deserialize<SavedState>(File.ReadAllText(file))??throw new JsonException();
+            if(s.FeedbackDefaultsVersion<1){s.FeedbackEnabled=true;s.FeedbackDefaultsVersion=1;}
             s.Master=double.IsFinite(s.Master)?Math.Clamp(s.Master,0,1):.45;s.MediaVolume=double.IsFinite(s.MediaVolume)?Math.Clamp(s.MediaVolume,0,1):.6;
             s.FocusMinutes=Math.Clamp(s.FocusMinutes,1,240);
             s.Levels=(s.Levels??new()).Where(p=>Catalog.Sounds.Any(i=>i.Id==p.Key)&&double.IsFinite(p.Value)).Take(4).ToDictionary(p=>p.Key,p=>Math.Clamp(p.Value,0,1));

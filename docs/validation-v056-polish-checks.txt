@@ -1,0 +1,10 @@
+PASS new profile defaults to light button feedback
+PASS old profile enables feedback once without changing volume
+PASS explicitly disabled feedback survives later restarts
+PASS expanded directory contains unique station IDs
+PASS offline direct jazz category contains two verified smooth-jazz choices
+PASS domestic search matches genre as well as station name
+PASS every direct station retains source and verification scope
+PASS four-hour and zero states render within compact clock bounds at 100–200 percent
+PASS new card still creates a true desktop child
+PASS clock and desktop controls fit the existing 220x320 card

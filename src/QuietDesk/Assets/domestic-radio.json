@@ -1,47 +1,36 @@
 [
   {
+    "Id": "on-smoothjazz",
+    "Name": "0N · Smooth Jazz",
+    "Url": "https://0n-smoothjazz.radionetz.de/0n-smoothjazz.mp3",
+    "Format": "MP3",
+    "Country": "德国",
+    "Tags": "爵士 · 舒缓",
+    "SourcePage": "https://www.0nradio.com/",
+    "DirectConnection": true,
+    "VerificationNote": "境外电台 · 2026-09-14 本机 WLAN 直出、应用无代理解码通过；不保证所有国内网络"
+  },
+  {
+    "Id": "101-smoothjazz",
+    "Name": "101 Smooth Jazz",
+    "Url": "http://jking.cdnstream1.com/b22139_128mp3",
+    "Format": "MP3",
+    "Country": "美国",
+    "Tags": "爵士 · 舒缓",
+    "SourcePage": "https://101smoothjazz.com/",
+    "DirectConnection": true,
+    "VerificationNote": "境外电台 · 2026-09-14 本机 WLAN 直出、应用无代理解码通过；不保证所有国内网络"
+  },
+  {
     "Id": "qtfm-267",
     "Name": "上海经典947",
     "Url": "https://lhttp.qtfm.cn/live/267/64k.mp3",
     "Format": "MP3",
     "Country": "中国",
-    "Tags": "国内直连 · 音乐广播",
+    "Tags": "古典 · 舒缓",
     "DirectConnection": true,
     "SourcePage": "https://m.qtfm.cn/channels/267/",
-    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
-  },
-  {
-    "Id": "qtfm-1260",
-    "Name": "广东音乐之声",
-    "Url": "https://lhttp.qtfm.cn/live/1260/64k.mp3",
-    "Format": "MP3",
-    "Country": "中国",
-    "Tags": "国内直连 · 音乐广播",
-    "DirectConnection": true,
-    "SourcePage": "https://m.qtfm.cn/channels/1260/",
-    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
-  },
-  {
-    "Id": "qtfm-20192",
-    "Name": "广州金曲音乐广播",
-    "Url": "https://lhttp.qtfm.cn/live/20192/64k.mp3",
-    "Format": "MP3",
-    "Country": "中国",
-    "Tags": "国内直连 · 音乐广播",
-    "DirectConnection": true,
-    "SourcePage": "https://m.qtfm.cn/channels/20192/",
-    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
-  },
-  {
-    "Id": "qtfm-4804",
-    "Name": "怀集音乐之声",
-    "Url": "https://lhttp.qtfm.cn/live/4804/64k.mp3",
-    "Format": "MP3",
-    "Country": "中国",
-    "Tags": "国内直连 · 音乐广播",
-    "DirectConnection": true,
-    "SourcePage": "https://m.qtfm.cn/channels/4804/",
-    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
+    "VerificationNote": "2026-09-14 本机应用无代理解码通过；不同地区／运营商及节目时段可能不同"
   },
   {
     "Id": "cnr-zgzs",
@@ -52,7 +41,84 @@
     "Tags": "国内直连 · 央广",
     "DirectConnection": true,
     "SourcePage": "https://www.radio.cn/pc-portal/home/index.html?type=x",
-    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
+    "VerificationNote": "2026-09-14 本机应用无代理解码通过；不同地区／运营商及节目时段可能不同"
+  },
+  {
+    "Id": "qtfm-332",
+    "Name": "北京音乐广播",
+    "Url": "https://lhttp.qtfm.cn/live/332/64k.mp3",
+    "Format": "MP3",
+    "Country": "中国",
+    "Tags": "流行 · 音乐",
+    "SourcePage": "https://www.rbc.cn/",
+    "DirectConnection": true,
+    "VerificationNote": "2026-09-14 本机应用无代理解码通过；不同地区／运营商及节目时段可能不同"
+  },
+  {
+    "Id": "qtfm-1260",
+    "Name": "广东音乐之声",
+    "Url": "https://lhttp.qtfm.cn/live/1260/64k.mp3",
+    "Format": "MP3",
+    "Country": "中国",
+    "Tags": "流行 · 音乐",
+    "DirectConnection": true,
+    "SourcePage": "https://m.qtfm.cn/channels/1260/",
+    "VerificationNote": "2026-09-14 本机应用无代理解码通过；不同地区／运营商及节目时段可能不同"
+  },
+  {
+    "Id": "qtfm-20192",
+    "Name": "广州金曲音乐广播",
+    "Url": "https://lhttp.qtfm.cn/live/20192/64k.mp3",
+    "Format": "MP3",
+    "Country": "中国",
+    "Tags": "流行 · 音乐",
+    "DirectConnection": true,
+    "SourcePage": "https://m.qtfm.cn/channels/20192/",
+    "VerificationNote": "2026-09-14 本机应用无代理解码通过；不同地区／运营商及节目时段可能不同"
+  },
+  {
+    "Id": "qtfm-4804",
+    "Name": "怀集音乐之声",
+    "Url": "https://lhttp.qtfm.cn/live/4804/64k.mp3",
+    "Format": "MP3",
+    "Country": "中国",
+    "Tags": "流行 · 音乐",
+    "DirectConnection": true,
+    "SourcePage": "https://m.qtfm.cn/channels/4804/",
+    "VerificationNote": "2026-09-14 本机应用无代理解码通过；不同地区／运营商及节目时段可能不同"
+  },
+  {
+    "Id": "qtfm-4938",
+    "Name": "江苏经典流行音乐广播",
+    "Url": "https://lhttp.qtfm.cn/live/4938/64k.mp3",
+    "Format": "MP3",
+    "Country": "中国",
+    "Tags": "流行 · 经典",
+    "SourcePage": "https://www.vojs.cn/2014new/c/g/",
+    "DirectConnection": true,
+    "VerificationNote": "2026-09-14 本机应用无代理解码通过；不同地区／运营商及节目时段可能不同"
+  },
+  {
+    "Id": "qtfm-1149",
+    "Name": "温州音乐之声",
+    "Url": "https://lhttp.qtfm.cn/live/1149/64k.mp3",
+    "Format": "MP3",
+    "Country": "中国",
+    "Tags": "流行 · 音乐",
+    "DirectConnection": true,
+    "SourcePage": "https://m.qtfm.cn/channels/1149/",
+    "VerificationNote": "2026-09-14 本机应用无代理解码通过；不同地区／运营商及节目时段可能不同"
+  },
+  {
+    "Id": "qtfm-1296",
+    "Name": "湖北经典音乐广播",
+    "Url": "https://lhttp.qtfm.cn/live/1296/64k.mp3",
+    "Format": "MP3",
+    "Country": "中国",
+    "Tags": "流行 · 经典",
+    "DirectConnection": true,
+    "SourcePage": "https://m.qtfm.cn/channels/1296/",
+    "VerificationNote": "2026-09-14 本机应用无代理解码通过；不同地区／运营商及节目时段可能不同"
   },
   {
     "Id": "cnr-jjzs",
@@ -63,6 +129,6 @@
     "Tags": "国内直连 · 央广",
     "DirectConnection": true,
     "SourcePage": "https://www.radio.cn/pc-portal/home/index.html?type=x",
-    "VerificationNote": "2026-09-11 无应用代理解码通过；VPN 路由下直连待验证"
+    "VerificationNote": "2026-09-14 本机应用无代理解码通过；不同地区／运营商及节目时段可能不同"
   }
 ]

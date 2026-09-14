@@ -2,7 +2,7 @@
 
 适合工作与学习时使用的 Windows 桌面音乐播放器。采用原生 WPF 界面，以中性深灰与柔粉色为主，支持真正嵌入桌面的紧凑组件。
 
-当前版本 **0.5.5**：新增 Springer Nature Meta、Guardian Content API 接入和 APS Harvest 摘要补充；来源页显示接入方式，出版社密钥独立加密保存。未配置相应来源密钥时保留官方 RSS。详见 [接口核查清单](docs/READING-SOURCES.md)、[阅读使用说明](docs/READING.md)、[提示词与缓存](docs/READING-AI.md) 和 [验证记录](docs/validation-v055.md)。
+当前版本 **0.5.6**：直连电台扩充为 12 台，新增爵士分类；默认开启可关闭的按键轻音效，桌面计时采用静态辉光管数字，应用图标改为原创高斯波包。提供无需管理员权限、无需另装 .NET 的 Windows 安装包。详见 [安装说明](docs/INSTALLER.md)、[本版验证](docs/validation-v056.md) 和 [阅读使用说明](docs/READING.md)。
 
 ## 主要功能
 
@@ -28,7 +28,7 @@
 ./scripts/build.ps1 -Publish
 
 # 运行
-./artifacts/QuietDesk-v0.5.5-win-x64/QuietDesk.exe
+./artifacts/QuietDesk-v0.5.6-win-x64/QuietDesk.exe
 
 # 打包便携版与源码
 ./scripts/package.ps1

@@ -18,7 +18,7 @@ public sealed class RadioDirectory : IDisposable
     public static bool IsHttp(string? url)=>Uri.TryCreate(url,UriKind.Absolute,out var uri)&&uri.Scheme is "https" or "http";
     public async Task<List<Station>> Search(string name,string tag,CancellationToken token)
     {
-        Cached=false;if(tag=="domestic")return Domestic().Where(s=>s.Name.Contains(name,StringComparison.OrdinalIgnoreCase)).ToList();Exception? last=null;
+        Cached=false;if(tag.StartsWith("domestic",StringComparison.Ordinal))return FilterDomestic(Domestic(),name,tag);Exception? last=null;
         var query=$"hidebroken=true&codec=MP3&limit=60&order=votes&reverse=true&name={Uri.EscapeDataString(name)}&tag={Uri.EscapeDataString(tag)}";
         foreach(var host in new[]{"de1.api.radio-browser.info","nl1.api.radio-browser.info"}) {
             try {
@@ -40,5 +40,9 @@ public sealed class RadioDirectory : IDisposable
         throw new IOException("电台目录暂时无法连接；你仍可使用离线声音或添加 MP3 电台直链。",last);
     }
     public static List<Station> Domestic()=>JsonSerializer.Deserialize<List<Station>>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"Assets","domestic-radio.json")))??new();
+    internal static List<Station> FilterDomestic(IEnumerable<Station> stations,string name,string tag){
+        string genre=tag switch{"domestic:jazz"=>"爵士","domestic:classical"=>"古典","domestic:pop"=>"流行",_=>""};
+        return stations.Where(s=>(s.Name+" "+s.Tags).Contains(name,StringComparison.OrdinalIgnoreCase)&&(genre.Length==0||s.Tags.Contains(genre,StringComparison.Ordinal))).ToList();
+    }
     public void Dispose()=>http.Dispose();
 }

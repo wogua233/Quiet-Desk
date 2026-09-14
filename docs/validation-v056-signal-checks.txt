@@ -1,0 +1,9 @@
+PASS normal-range stereo signal is bit-identical after 256-frame delay
+PASS overload and transient peaks bounded to 0.98, stereo-linked, block-size invariant
+PASS digital silence remains exactly zero
+PASS full mixer at master=100%, media=100%: 1 kHz THD+N 0.000004%
+PASS actual byte/float output adapter matches direct mixer across 100 reused buffers
+REFERENCE previous waveshaping formula: 1 kHz THD+N 9.549134%
+PASS master/media 20%/100% vs 100%/20%: relative RMS difference 0.003112%
+PASS aliased PCM capture is exact; source removal and ring underflow clear all reused output bytes
+PASS five-second bounded capture matches final PCM with nonzero offsets; pending capture cancels on disposal

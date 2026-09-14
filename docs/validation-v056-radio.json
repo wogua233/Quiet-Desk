@@ -1,0 +1,110 @@
+[
+  {
+    "Name": "0N · Smooth Jazz",
+    "Url": "https://0n-smoothjazz.radionetz.de/0n-smoothjazz.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.9999695,
+    "seconds": 6.5905957,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  },
+  {
+    "Name": "101 Smooth Jazz",
+    "Url": "http://jking.cdnstream1.com/b22139_128mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.99850464,
+    "seconds": 3.8458467,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  },
+  {
+    "Name": "上海经典947",
+    "Url": "https://lhttp.qtfm.cn/live/267/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.17599487,
+    "seconds": 4.3306235,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  },
+  {
+    "Name": "中国之声",
+    "Url": "https://ngcdn001.cnr.cn/live/zgzs/index.m3u8",
+    "Format": "HLS/AAC",
+    "status": "decoded-no-proxy",
+    "peak": 0.5525833,
+    "seconds": 3.5208475,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  },
+  {
+    "Name": "北京音乐广播",
+    "Url": "https://lhttp.qtfm.cn/live/332/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.5557251,
+    "seconds": 4.3376572,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  },
+  {
+    "Name": "广东音乐之声",
+    "Url": "https://lhttp.qtfm.cn/live/1260/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.31271333,
+    "seconds": 3.5705556,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  },
+  {
+    "Name": "广州金曲音乐广播",
+    "Url": "https://lhttp.qtfm.cn/live/20192/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.22865188,
+    "seconds": 4.0955981,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  },
+  {
+    "Name": "怀集音乐之声",
+    "Url": "https://lhttp.qtfm.cn/live/4804/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.47039795,
+    "seconds": 3.8989937,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  },
+  {
+    "Name": "江苏经典流行音乐广播",
+    "Url": "https://lhttp.qtfm.cn/live/4938/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.70751387,
+    "seconds": 4.3274733,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  },
+  {
+    "Name": "经济之声",
+    "Url": "https://ngcdn002.cnr.cn/live/jjzs/index.m3u8",
+    "Format": "HLS/AAC",
+    "status": "decoded-no-proxy",
+    "peak": 0.54226077,
+    "seconds": 3.6234616,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  },
+  {
+    "Name": "温州音乐之声",
+    "Url": "https://lhttp.qtfm.cn/live/1149/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.6136723,
+    "seconds": 3.6206516,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  },
+  {
+    "Name": "湖北经典音乐广播",
+    "Url": "https://lhttp.qtfm.cn/live/1296/64k.mp3",
+    "Format": "MP3",
+    "status": "decoded-no-proxy",
+    "peak": 0.30525687,
+    "seconds": 4.3544463,
+    "note": "未修改VPN；操作系统隧道路由仍需用户核验"
+  }
+]

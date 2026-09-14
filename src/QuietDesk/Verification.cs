@@ -21,13 +21,13 @@ internal static class Verification
             var app=new System.Windows.Application();app.Resources.MergedDictionaries.Add(new(){Source=new Uri("/QuietDesk;component/UI/Theme.xaml",UriKind.Relative)});
             var folder=Path.Combine(Path.GetTempPath(),"quietdesk-model-"+Guid.NewGuid());
             using(var model=new PlayerModel(folder)){
-                if(model.Playing)throw new Exception("Auto-play on startup");
+                model.FeedbackVolume=0;if(model.Playing)throw new Exception("Auto-play on startup");
                 foreach(var c in model.Channels)c.Enabled=true;
                 if(model.Channels.Count(c=>c.Enabled)!=4)throw new Exception("Four-channel limit failed");lines.Add("PASS four-channel UI model limit");
                 model.SaveScene("测试组合");var scene=model.Scenes.Single();model.ApplyScene(new Scene{Name="空白"});model.ApplyScene(scene);
                 if(model.Channels.Count(c=>c.Enabled)!=4)throw new Exception("Scene restore failed");lines.Add("PASS scene save / clear / restore");
                 model.DeleteScene(scene);if(!model.CanUndoScene||model.Scenes.Count!=0)throw new Exception("Undo state missing");model.UndoScene();if(model.CanUndoScene||model.Scenes.Count!=1)throw new Exception("Undo failed");model.RenameScene(scene,"新组合");if(model.Scenes[0].Name!="新组合")throw new Exception("Rename failed");lines.Add("PASS scene rename / delete / undo");
-                var volume=model.Master;model.ToggleMute();if(model.Master!=0)throw new Exception("Mute failed");model.ToggleMute();if(model.Master!=volume)throw new Exception("Restore volume failed");if(model.FeedbackEnabled)throw new Exception("Feedback must default off");lines.Add("PASS mute restore / silent feedback default");
+                var volume=model.Master;model.ToggleMute();if(model.Master!=0)throw new Exception("Mute failed");model.ToggleMute();if(model.Master!=volume)throw new Exception("Restore volume failed");if(!model.FeedbackEnabled)throw new Exception("Feedback must default on");lines.Add("PASS mute restore / light feedback default on");
                 model.Queue.Add("first.wav");model.Queue.Add("second.wav");model.MoveFile("first.wav","second.wav");if(model.Queue[1]!="first.wav")throw new Exception("Queue reorder failed");model.Queue.Clear();lines.Add("PASS queue reorder");
                 var window=new MainWindow(model);window.Width=1100;window.Height=790;
                 var root=(System.Windows.FrameworkElement)window.Content;root.Measure(new(1100,760));root.Arrange(new(0,0,1100,760));root.UpdateLayout();

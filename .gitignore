@@ -4,3 +4,4 @@
 artifacts/
 dotnet-releases.json
 .vs/
+**/__pycache__/

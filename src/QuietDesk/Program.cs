@@ -11,6 +11,7 @@ internal static class Program
 {
     [STAThread] private static int Main(string[] args)
     {
+        if(args.Contains("--polish-test"))return PolishVerification.Run(args);
         if(args.Contains("--ai-short-test"))return Reading.AiVerification.ShortCheck(args).GetAwaiter().GetResult();
         if(args.Contains("--ai-network-test"))return Reading.AiLiveVerification.Network(args).GetAwaiter().GetResult();
         if(args.Contains("--ai-live-test"))return Reading.AiLiveVerification.Run(args).GetAwaiter().GetResult();

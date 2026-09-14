@@ -1,0 +1,6 @@
+PASS independent media pause survives global pause / resume
+PASS local media resumes without reopening source
+PASS default output selection preserves state
+PASS paused device selection does not autoplay
+PASS feedback mute explanation and nonzero preview signal
+PASS domestic catalog available without network
