@@ -11,17 +11,21 @@ Get-ChildItem -LiteralPath (Join-Path $projectRoot 'docs') | Copy-Item -Destinat
 if($LASTEXITCODE -ne 0){throw 'Release credential audit failed; packaging stopped.'}
 Compress-Archive -Path (Join-Path $release '*') -DestinationPath (Join-Path $projectRoot 'artifacts\QuietDesk-0.5.6-beta-win-x64.zip') -Force
 $stage=Join-Path $projectRoot ('artifacts\source-'+[DateTime]::Now.ToString('yyyyMMddHHmmss'))
-New-Item -ItemType Directory -Path $stage | Out-Null
-foreach($folder in @('src','docs','scripts')){
-    Get-ChildItem -LiteralPath (Join-Path $projectRoot $folder) -File -Recurse | Where-Object {$_.FullName -notmatch '\\(bin|obj|__pycache__)\\'} | ForEach-Object {
-        $relative=$_.FullName.Substring($projectRoot.Length+1)
-        $destination=Join-Path $stage $relative
-        New-Item -ItemType Directory -Force (Split-Path -Parent $destination) | Out-Null
-        Copy-Item -LiteralPath $_.FullName -Destination $destination
+try {
+    New-Item -ItemType Directory -Path $stage | Out-Null
+    foreach($folder in @('src','docs','scripts')){
+        Get-ChildItem -LiteralPath (Join-Path $projectRoot $folder) -File -Recurse | Where-Object {$_.FullName -notmatch '\\(bin|obj|__pycache__)\\'} | ForEach-Object {
+            $relative=$_.FullName.Substring($projectRoot.Length+1)
+            $destination=Join-Path $stage $relative
+            New-Item -ItemType Directory -Force (Split-Path -Parent $destination) | Out-Null
+            Copy-Item -LiteralPath $_.FullName -Destination $destination
+        }
     }
+    foreach($file in @('README.md','global.json','.gitignore')){Copy-Item -LiteralPath (Join-Path $projectRoot $file) -Destination (Join-Path $stage $file)}
+    & $Python (Join-Path $PSScriptRoot 'audit-release.py') $stage
+    if($LASTEXITCODE -ne 0){throw 'Source credential audit failed; packaging stopped.'}
+    Compress-Archive -Path (Join-Path $stage '*') -DestinationPath (Join-Path $projectRoot 'artifacts\QuietDesk-0.5.6-beta-source.zip') -Force
+} finally {
+    if(Test-Path -LiteralPath $stage){Remove-Item -LiteralPath $stage -Recurse -Force}
 }
-foreach($file in @('README.md','global.json','.gitignore')){Copy-Item -LiteralPath (Join-Path $projectRoot $file) -Destination (Join-Path $stage $file)}
-& $Python (Join-Path $PSScriptRoot 'audit-release.py') $stage
-if($LASTEXITCODE -ne 0){throw 'Source credential audit failed; packaging stopped.'}
-Compress-Archive -Path (Join-Path $stage '*') -DestinationPath (Join-Path $projectRoot 'artifacts\QuietDesk-0.5.6-beta-source.zip') -Force
 Get-FileHash -LiteralPath (Join-Path $projectRoot 'artifacts\QuietDesk-0.5.6-beta-win-x64.zip'),(Join-Path $projectRoot 'artifacts\QuietDesk-0.5.6-beta-source.zip') -Algorithm SHA256 | Format-Table -AutoSize

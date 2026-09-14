@@ -16,7 +16,10 @@ OutFile "${OUTPUT}"
 InstallDir "$LOCALAPPDATA\Programs\${PRODUCT_KEY}"
 InstallDirRegKey HKCU "Software\${PRODUCT_KEY}" "InstallDir"
 RequestExecutionLevel user
-SetCompressor zlib
+; Solid LZMA materially reduces the self-contained runtime and PCM sound payload.
+; A 64 MiB dictionary keeps installation memory bounded on supported x64 systems.
+SetCompressor /SOLID lzma
+SetCompressorDictSize 64
 VIProductVersion "${VERSION}.0"
 VIAddVersionKey /LANG=2052 "ProductName" "静隅 QuietDesk"
 VIAddVersionKey /LANG=2052 "FileDescription" "静隅安装向导"
