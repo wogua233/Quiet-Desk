@@ -1,6 +1,6 @@
 $ErrorActionPreference='Stop'
 $projectRoot=Split-Path -Parent $PSScriptRoot
-$release=Join-Path $projectRoot 'artifacts\QuietDesk-v0.4.0-win-x64'
+$release=Join-Path $projectRoot 'artifacts\QuietDesk-v0.4.1-win-x64'
 if(-not (Test-Path -LiteralPath (Join-Path $release 'QuietDesk.exe'))){throw 'Publish the release first.'}
 Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md') -Destination (Join-Path $release 'README.md')
 $releaseDocs=Join-Path $release 'docs'

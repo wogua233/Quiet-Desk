@@ -1,0 +1,10 @@
+{
+  "cachedArticles": 10000,
+  "syncSeconds": 0.8076892,
+  "sourceStatus": "更新成功 · 24条来源记录",
+  "queryMeanMs": 47.933318,
+  "durationSeconds": 30.4036761,
+  "averageWholeMachineCpuPercent": 0.040687246021473285,
+  "peakPrivateCommitBytes": 42008576,
+  "scope": "isolated reading service; no WPF/audio; private commit is not private working set"
+}

@@ -12,9 +12,9 @@ public sealed class ReadingSettings
     public string Model {get;set;}="";
     public string ProtectedKey {get;set;}="";
     public string AbstractConsent {get;set;}="";
-    public string FullConsent {get;set;}="";
+    public int AbstractModeVersion {get;set;}
     public bool Automatic {get;set;}
-    public int DailyLimit {get;set;}=50;
+    public int DailyLimit {get;set;}=10;
     [System.Text.Json.Serialization.JsonIgnore]
     public string Key {get {try{return ProtectedKey.Length==0?"":Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(ProtectedKey),null,DataProtectionScope.CurrentUser));}catch{return "";}}}
     public void SetKey(string key)=>ProtectedKey=key.Length==0?"":Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(key),null,DataProtectionScope.CurrentUser));
@@ -25,7 +25,7 @@ public sealed class Source
 {
     public string Id {get;set;}="";public string Name {get;set;}="";public string Url {get;set;}="";public string Publisher {get;set;}="";
     public bool Subscribed {get;set;} public string Status {get;set;}="尚未更新";public DateTimeOffset? LastSuccess {get;set;}
-    public string ETag {get;set;}="";public string Modified {get;set;}="";public DateTimeOffset? NextAttempt {get;set;} public int Failures {get;set;}
+    public string ETag {get;set;}="";public string Modified {get;set;}="";public DateTimeOffset? NextAttempt {get;set;} public int Failures {get;set;} public int ArticleCount {get;set;}
     public override string ToString()=>Name;
 }
 public sealed class Article
@@ -33,12 +33,17 @@ public sealed class Article
     public string Id {get;set;}="";public string SourceId {get;set;}="";public string SourceName {get;set;}="";public string Title {get;set;}="";
     public string ChineseTitle {get;set;}="";public string Url {get;set;}="";public string Doi {get;set;}="";public string Abstract {get;set;}="";
     public string? PublishedDay {get;set;} public string DateEvidence {get;set;}="";public DateTimeOffset Discovered {get;set;}=DateTimeOffset.Now;
-    public bool Read {get;set;} public bool Favorite {get;set;} public string Summary {get;set;}="";public string FullSummary {get;set;}="";
-    public string SummaryKey {get;set;}="";public string FullKey {get;set;}="";public string Status {get;set;}="待生成";
-    public string Display=>$"{(Read?"":"● ")}{(ChineseTitle.Length>0?ChineseTitle+"\n"+Title:Title)}\n{SourceName} · {PublishedDay??"发表日期待确认"} · {Status}";
+    public bool Read {get;set;} public bool Favorite {get;set;} public string Summary {get;set;}="";
+    public string SummaryKey {get;set;}="";public string Status {get;set;}="待生成";
+    public string Basis {get;set;}="基于摘要";
+    public string AbstractStatus {get;set;}="";
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool HasAbstract=>Abstract.Length>=100&&!Abstract.TrimEnd().EndsWith("…")&&!Abstract.TrimEnd().EndsWith("...");
+
+    public string DisplayTitle=>(Read?"":"● ")+(Favorite?"★ ":"")+(ChineseTitle.Length>0?ChineseTitle:Title);
+    public string DisplayMeta=>$"{SourceName} · {PublishedDay??"日期待确认"}";
+    public string Display=>$"{DisplayTitle}\n{DisplayMeta} · {Status}";
 }
-public sealed class ReadJob {public string Id {get;set;}=Guid.NewGuid().ToString("N");public string ArticleId {get;set;}="";public string File {get;set;}="";public string Status {get;set;}="等待闲置";public bool Immediate {get;set;}}
-public sealed class Extracted {public string Text {get;set;}="";public string Basis {get;set;}="";public bool Complete {get;set;} public string Error {get;set;}="";}
 internal static class ReadingCatalog
 {
     internal static List<Source> All()=>new[]{

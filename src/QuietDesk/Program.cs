@@ -11,7 +11,6 @@ internal static class Program
 {
     [STAThread] private static int Main(string[] args)
     {
-        if(args.Length>0&&args[0]=="--reading-worker")return Reading.ReadingWorker.Run(args);
         if(args.Contains("--reading-test"))return Reading.ReadingVerification.Run(args);
         if(args.Contains("--signal-test"))return SignalVerification.Run(args);
         if(args.Contains("--scene-test"))return SceneSelectionVerification.Run(args);

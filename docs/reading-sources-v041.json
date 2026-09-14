@@ -1,0 +1,107 @@
+[
+  {
+    "Name": "PRL",
+    "Url": "https://feeds.aps.org/rss/recent/prl.xml",
+    "status": 200,
+    "count": 100,
+    "result": "parsed",
+    "sample": "All Steerable Quantum Correlations Can Provide Thermodynamic Advantages in Cooling",
+    "abstractCharacters": 427
+  },
+  {
+    "Name": "PRX",
+    "Url": "https://feeds.aps.org/rss/recent/prx.xml",
+    "status": 200,
+    "count": 100,
+    "result": "parsed",
+    "sample": "Geometrically Frustrated Quadrupoles on the Pyrochlore Lattice and Generalized Spin Liquids",
+    "abstractCharacters": 343
+  },
+  {
+    "Name": "PRB",
+    "Url": "https://feeds.aps.org/rss/recent/prb.xml",
+    "status": 200,
+    "count": 100,
+    "result": "parsed",
+    "sample": "Josephson phase shift and diode effect due to the inverse spin Hall effect",
+    "abstractCharacters": 414
+  },
+  {
+    "Name": "PRE",
+    "Url": "https://feeds.aps.org/rss/recent/pre.xml",
+    "status": 200,
+    "count": 100,
+    "result": "parsed",
+    "sample": "Canonical criterion for third-order transitions identified by microcanonical inflection-point analysis",
+    "abstractCharacters": 433
+  },
+  {
+    "Name": "JACS",
+    "Url": "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jacsat",
+    "result": "failed",
+    "error": "Response status code does not indicate success: 403 (Forbidden)."
+  },
+  {
+    "Name": "Nature",
+    "Url": "https://www.nature.com/nature.rss",
+    "status": 200,
+    "count": 75,
+    "result": "parsed",
+    "sample": "The super El Niño is already wreaking havoc: here’s what’s in store",
+    "abstractCharacters": 0
+  },
+  {
+    "Name": "Science",
+    "Url": "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science",
+    "status": 200,
+    "count": 36,
+    "result": "parsed",
+    "sample": "Save the bogs, for peat’s sake",
+    "abstractCharacters": 64
+  },
+  {
+    "Name": "Nature Communications",
+    "Url": "https://www.nature.com/ncomms.rss",
+    "status": 200,
+    "count": 8,
+    "result": "parsed",
+    "sample": "Mineral-integrated electrochemical system enabling membrane-free pH swing and active chlorine species generation for urine valorization",
+    "abstractCharacters": 0
+  },
+  {
+    "Name": "Nature Chemistry",
+    "Url": "https://www.nature.com/nchem.rss",
+    "status": 200,
+    "count": 8,
+    "result": "parsed",
+    "sample": "Nanoscale visualization of plasmon-enhanced hydrogen activation on a Pt(111) surface",
+    "abstractCharacters": 0
+  },
+  {
+    "Name": "Scientific American",
+    "Url": "https://www.scientificamerican.com/platform/syndication/rss/",
+    "status": 200,
+    "count": 50,
+    "result": "parsed",
+    "sample": "How our sense of beauty takes shape in the brain",
+    "abstractCharacters": 70
+  },
+  {
+    "Name": "BBC World",
+    "Url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "status": 200,
+    "count": 24,
+    "result": "parsed",
+    "sample": "Russia hits Ukrainian train shortly after Boris Johnson and top European officials leave station",
+    "abstractCharacters": 147
+  },
+  {
+    "Name": "The Guardian World",
+    "Url": "https://www.theguardian.com/world/rss",
+    "status": 200,
+    "count": 45,
+    "result": "parsed",
+    "sample": "Burial of King Oyo takes place in Uganda as news anchor prepares for throne",
+    "abstractCharacters": 552
+  }
+]

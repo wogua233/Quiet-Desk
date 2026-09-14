@@ -20,7 +20,7 @@ internal static class ReadingContent
     internal static string Canonical(string url){if(!ReadingCatalog.Http(url))return "";var u=new UriBuilder(url){Fragment=""};u.Query=string.Join("&",u.Query.TrimStart('?').Split('&',StringSplitOptions.RemoveEmptyEntries).Where(s=>!s.StartsWith("utm_",StringComparison.OrdinalIgnoreCase)));return u.Uri.AbsoluteUri;}
     internal static List<Article> Parse(byte[] bytes,Source source)
     {
-        using var stream=new MemoryStream(bytes);using var xr=XmlReader.Create(stream,new XmlReaderSettings{DtdProcessing=DtdProcessing.Prohibit,XmlResolver=null,MaxCharactersInDocument=4_000_000});var doc=XDocument.Load(xr);var list=new List<Article>();
+        using var stream=new MemoryStream(bytes);using var xr=XmlReader.Create(stream,new XmlReaderSettings{DtdProcessing=DtdProcessing.Prohibit,XmlResolver=null,MaxCharactersInDocument=4_000_000});var doc=XDocument.Load(xr);if(doc.Root?.Name.LocalName is not ("rss" or "RDF" or "feed"))throw new IOException("返回内容不是 RSS／Atom 订阅源。");var list=new List<Article>();
         foreach(var item in doc.Descendants().Where(x=>x.Name.LocalName is "item" or "entry").Take(1000)){
             string V(params string[] names)=>item.Elements().FirstOrDefault(x=>names.Contains(x.Name.LocalName))?.Value.Trim()??"";
             var link=item.Elements().FirstOrDefault(x=>x.Name.LocalName=="link"&&(x.Attribute("rel")?.Value is null or "alternate"));var url=Canonical(link?.Attribute("href")?.Value??link?.Value??"");if(url.Length==0)continue;
@@ -28,18 +28,9 @@ internal static class ReadingContent
             string raw=V("published","pubDate","date");string? day=null;
             if(Regex.IsMatch(raw,@"^\d{4}-\d{2}-\d{2}$"))day=raw;
             else if(DateTimeOffset.TryParse(raw,CultureInfo.InvariantCulture,DateTimeStyles.AllowWhiteSpaces,out var when))day=when.ToLocalTime().ToString("yyyy-MM-dd");
-            var a=new Article{Id=ReadingCatalog.Hash(doi.Length>0?doi:source.Id+":"+url),Doi=doi,SourceId=source.Id,SourceName=source.Name,Title=title,Url=url,Abstract=Plain(V("description","summary","encoded","content")),PublishedDay=day,DateEvidence=raw.Length==0?"未知":"订阅源发表日期"};if(a.Abstract.Length>16000)a.Abstract=a.Abstract[..16000];list.Add(a);
+            string excerpt=V("description","summary");
+            if(source.Publisher=="aps"){var fragment=new HtmlDocument();fragment.LoadHtml(excerpt);var paragraph=fragment.DocumentNode.SelectSingleNode("//p");if(paragraph!=null)excerpt=paragraph.InnerHtml;}
+            var a=new Article{Id=ReadingCatalog.Hash(doi.Length>0?doi:source.Id+":"+url),Doi=doi,SourceId=source.Id,SourceName=source.Name,Title=title,Url=url,Basis=source.Publisher=="news"?"基于导读":"基于摘要",Abstract=Plain(excerpt),PublishedDay=day,DateEvidence=raw.Length==0?"未知":"订阅源发表日期"};if(a.Abstract.Length>16000)a.Abstract=a.Abstract[..16000];list.Add(a);
         }return list;
-    }
-    internal static Extracted ExtractHtml(string html,string publisher)
-    {
-        var d=new HtmlDocument();d.LoadHtml(html);
-        var node=publisher switch{"aps"=>d.DocumentNode.SelectSingleNode("//*[contains(@class,'article-body')]"),"nature"=>d.DocumentNode.SelectSingleNode("//*[@data-component='article-body']|//*[contains(@class,'c-article-body')]"),"acs"=>d.DocumentNode.SelectSingleNode("//*[contains(@class,'articleBody')]"),"science"=>d.DocumentNode.SelectSingleNode("//*[@role='doc-article']|//*[contains(@class,'article__body')]"),_=>d.DocumentNode.SelectSingleNode("//article")};
-        if(node==null)return new(){Error="需在浏览器访问：未取得可识别全文。"};
-        foreach(var n in node.SelectNodes(".//script|.//style|.//nav|.//aside")??Enumerable.Empty<HtmlNode>())n.Remove();
-        var text=new StringBuilder();foreach(var n in node.SelectNodes(".//h2|.//h3|.//p")??Enumerable.Empty<HtmlNode>()){var t=Plain(n.InnerHtml);if(t.Length>0)text.AppendLine(n.Name.StartsWith("h")?"\n【"+t+"】":t);}
-        string result=text.ToString();bool gated=Regex.IsMatch(result,@"subscribe to (read|access)|purchase (this|the) article|access through your institution|sign in to access",RegexOptions.IgnoreCase);
-        if(result.Length<1000||gated)return new(){Error="需在浏览器访问：全文不足或访问受限。"};
-        return new(){Text=result.Length>200000?result[..200000]:result,Basis="网页章节",Complete=false};
     }
 }
