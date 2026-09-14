@@ -15,6 +15,8 @@ namespace QuietDesk;
 internal sealed class MainWindow : Window
 {
     private readonly Reading.ReadingViewModel reading;
+    private readonly FrameworkElement playerBar;
+    private readonly Border contentFrame;
     internal void DisposeReading()=>reading.Dispose();
     private readonly WrapPanel savedSceneButtons=new();
     private readonly PlayerModel model;private readonly ContentControl body=new();private readonly StackPanel nav=new();
@@ -34,8 +36,8 @@ internal sealed class MainWindow : Window
         var footer=new StackPanel();DockPanel.SetDock(footer,Dock.Bottom);side.Children.Add(footer);
         footer.Children.Add(Ui.Text("给注意力，一处栖息。",11,"#95919B"));Ui.Gap(footer,12);footer.Children.Add(Ui.Button("收起到桌面",()=>Hide()));
         side.Children.Add(new ScrollViewer{Content=nav,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled});
-        var content=new Border{Child=body,Padding=new Thickness(28,28,28,16),Background=Ui.B("#222224"),BorderBrush=Ui.B("#333036"),BorderThickness=new Thickness(1,0,0,0)};Grid.SetColumn(content,1);upper.Children.Add(content);
-        var bottom=BuildPlayer();Grid.SetRow(bottom,1);shell.Children.Add(bottom);
+        contentFrame=new Border{Child=body,Padding=new Thickness(28,28,28,16),Background=Ui.B("#222224"),BorderBrush=Ui.B("#333036"),BorderThickness=new Thickness(1,0,0,0)};Grid.SetColumn(contentFrame,1);upper.Children.Add(contentFrame);
+        playerBar=BuildPlayer();Grid.SetRow(playerBar,1);shell.Children.Add(playerBar);
         IsVisibleChanged+=(_,_)=>{if(currentPage==4){if(!IsVisible){body.Content=null;pages.Remove(4);}else Navigate(4);}};
         Navigate(0);
         model.Scenes.CollectionChanged+=(_,_)=>{RefreshSavedSceneButtons();pages.Remove(2);if(currentPage==2)Navigate(2);};model.Favorites.CollectionChanged+=(_,_)=>{pages.Remove(2);if(currentPage==2)Navigate(2);};
@@ -59,6 +61,8 @@ internal sealed class MainWindow : Window
     }
     internal void Navigate(int page)
     {
+        playerBar.Visibility=page==4?Visibility.Collapsed:Visibility.Visible;
+        contentFrame.Padding=page==4?new Thickness(16,12,16,12):new Thickness(28,28,28,16);
         if(currentPage==4&&page!=4)pages.Remove(4);
         if(body.Content is ScrollViewer old)offsets[currentPage]=old.VerticalOffset;currentPage=page;nav.Children.Clear();var names=new[]{"声音场景","在线电台","我的收藏","设置","阅读"};
         for(int i=0;i<names.Length;i++){int index=i;var b=Ui.Button(names[i],()=>Navigate(index));var label=new StackPanel{Orientation=Orientation.Horizontal};label.Children.Add(Icons.Create(new[]{"leaves","noise","heart","settings","leaves"}[i],18));var text=Ui.Text(names[i]);text.Margin=new Thickness(10,0,0,0);label.Children.Add(text);b.Content=label;b.HorizontalContentAlignment=HorizontalAlignment.Left;b.Margin=new Thickness(0,0,0,10);if(i==page){b.Background=Ui.B("#333036");b.Foreground=Ui.B("#C2BEC8");}nav.Children.Add(b);}
@@ -138,7 +142,7 @@ internal sealed class MainWindow : Window
         form.Children.Add(Ui.Button("重新连接所选设备",model.ReconnectDevice));Ui.Gap(form,10);form.Children.Add(Ui.Button("重新嵌入桌面组件",()=>ReattachDesktop?.Invoke()));Ui.Gap(form,24);
         form.Children.Add(Ui.Text("安静的默认设置",15,"#FCFCFC"));Ui.Gap(form,10);form.Children.Add(Ui.Text("启动不自动播放，不随系统开机启动。\n专注结束不响铃、不弹窗；系统睡眠时暂停专注。\n所有收藏、场景和统计保存在此设备。",12));Ui.Gap(form,18);
         form.Children.Add(Ui.Text("音频问题诊断",15,"#FCFCFC"));Ui.Gap(form,8);form.Children.Add(Ui.Text("播放问题声音时导出 5 秒软件输出。只保存静隅自身的音频与音量设置，不录麦克风或其他应用。",12));Ui.Gap(form,8);form.Children.Add(Ui.Button("导出 5 秒音频诊断",async()=>{var path=await model.ExportAudioDiagnostic();if(path!=null){try{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe","/select,\""+path+"\""){UseShellExecute=true});}catch(Exception){}}},feedback:false));Ui.Gap(form,18);
-        form.Children.Add(Ui.Button("声音来源与许可",()=>ShowLicense()));Ui.Gap(form,10);form.Children.Add(Ui.Text("静隅 0.5.0 · Windows x64\nHLS/AAC 使用 FFmpeg（LGPLv3+），源码与许可见 docs。\n"+model.DataDirectory,10,"#95919B"));Ui.Gap(form,20);form.Children.Add(Ui.Button("退出静隅",()=>ExitApp?.Invoke()));page.Children.Add(Ui.Panel(form));return new ScrollViewer{Content=page};
+        form.Children.Add(Ui.Button("声音来源与许可",()=>ShowLicense()));Ui.Gap(form,10);form.Children.Add(Ui.Text("静隅 0.5.1 · Windows x64\nHLS/AAC 使用 FFmpeg（LGPLv3+），源码与许可见 docs。\n"+model.DataDirectory,10,"#95919B"));Ui.Gap(form,20);form.Children.Add(Ui.Button("退出静隅",()=>ExitApp?.Invoke()));page.Children.Add(Ui.Panel(form));return new ScrollViewer{Content=page};
     }
     private void ShowLicense(){var text=System.IO.File.ReadAllText(System.IO.Path.Combine(AppContext.BaseDirectory,"SOUND-LICENSES.md"));var w=new Window{Owner=this,Title="声音来源与许可",Width=800,Height=600,Background=Background,WindowStartupLocation=WindowStartupLocation.CenterOwner};w.Content=new TextBox{Text=text,IsReadOnly=true,TextWrapping=TextWrapping.Wrap,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,Margin=new Thickness(18)};w.ShowDialog();}
     private bool Confirm(string title,string message){var w=new Window{Owner=this,Title=title,Width=420,Height=205,ResizeMode=ResizeMode.NoResize,Background=Background,WindowStartupLocation=WindowStartupLocation.CenterOwner};WindowChrome.DarkTitle(w);var p=new StackPanel{Margin=new Thickness(22)};p.Children.Add(Ui.Text(message));Ui.Gap(p,18);var row=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right};var cancel=Ui.Button("取消",()=>w.DialogResult=false);cancel.IsCancel=true;row.Children.Add(cancel);var ok=Ui.Button("确认",()=>w.DialogResult=true,true);ok.Margin=new Thickness(8,0,0,0);row.Children.Add(ok);p.Children.Add(row);w.Content=p;return w.ShowDialog()==true;}
