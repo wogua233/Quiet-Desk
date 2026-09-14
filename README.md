@@ -4,6 +4,8 @@
 
 当前版本 **0.5.6 Beta（公开测试版）**：直连电台扩充为 12 台，新增爵士分类；默认开启可关闭的按键轻音效，桌面计时采用静态辉光管数字，应用图标改为原创高斯波包。提供无需管理员权限、无需另装 .NET 的 Windows 安装包；实心压缩后的安装包约 260 MiB。详见 [安装说明](docs/INSTALLER.md)、[本版验证](docs/validation-v056.md) 和 [阅读使用说明](docs/READING.md)。
 
+**[直接下载 Windows 安装包](https://github.com/wogua233/Quiet-Desk/releases/download/v0.5.6-beta/QuietDesk-0.5.6-beta-Setup.exe)** · [发布说明与 SHA256](https://github.com/wogua233/Quiet-Desk/releases/tag/v0.5.6-beta)
+
 ## 主要功能
 
 - **阅读**：12个内置学术/新闻来源、自定义RSS、日期回看与收藏；自配云端API，一次请求翻译标题与摘要并生成总结；不获取全文或解析PDF。默认不启用阅读、不启用自动AI，启用阅读后仅订阅JACS，API费用由服务方收取。
