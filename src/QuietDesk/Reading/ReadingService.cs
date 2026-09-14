@@ -15,6 +15,7 @@ internal sealed class ReadingService:IDisposable
     private readonly HttpClient http;
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string,byte> checkingSources=new();
     private readonly SummaryClient summaries;
+    private readonly PublisherApis publishers;
     private readonly CancellationTokenSource stop=new();
     private readonly SemaphoreSlim sync=new(1),api=new(1),slots=new(2),dispatch=new(1);
     private readonly ReadingIdleGate idle=new();
@@ -29,10 +30,11 @@ internal sealed class ReadingService:IDisposable
     internal string QueueStatus {get;private set;}="尚未开始翻译";
     internal bool QueuePaused=>queue.Paused;
 
-    internal ReadingService(string directory,ReadingSettings settings,HttpMessageHandler? summaryHandler=null,bool start=true,HttpMessageHandler? sourceHandler=null)
+    internal ReadingService(string directory,ReadingSettings settings,HttpMessageHandler? summaryHandler=null,bool start=true,HttpMessageHandler? sourceHandler=null,HttpMessageHandler? publisherHandler=null)
     {
         http=sourceHandler==null?ReadingContent.Client():new HttpClient(sourceHandler);
         summaries=new(summaryHandler);Settings=Clone(settings);store=new(directory);
+        publishers=new(provider=>store.Reserve("source-api:"+provider+":"+DateTime.Today.ToString("yyyy-MM-dd"),200),publisherHandler);
         foreach(var s in ReadingCatalog.All()){
             var existing=store.Find<Source>("source",s.Id);
             if(existing==null)store.Put("source",s.Id,s);
@@ -40,7 +42,7 @@ internal sealed class ReadingService:IDisposable
                 existing.Url=s.Url;existing.ETag="";existing.Modified="";existing.NextAttempt=null;existing.Failures=0;existing.ParserVersion=0;existing.Status="订阅地址已更新，等待获取";store.Put("source",existing.Id,existing);
             }
         }
-        store.MigrateAbstractMode();store.MigrateBilingual();store.Prune();
+        store.MigrateAbstractMode();store.MigrateBilingual();store.ResetApsAbstractFailures(migrate:true);store.Prune();
         queue=store.Find<AiQueueState>("ai-state","current")??new();
         // An interrupted request may already have been billed. Never automatically repeat it.
         foreach(var j in Jobs().Where(j=>j.State=="处理中")){j.State="失败";store.Put("ai-job",j.Id,j);}
@@ -60,6 +62,7 @@ internal sealed class ReadingService:IDisposable
     }
     internal void Configure(ReadingSettings settings)
     {
+        if(Settings.ProtectedApsKey!=settings.ProtectedApsKey)store.ResetApsAbstractFailures();
         Settings=Clone(settings);SaveSettings(Directory.GetParent(store.DirectoryPath)!.FullName,settings);Changed();
     }
     internal List<Source> Sources()=>store.Load<Source>("source");
@@ -113,7 +116,44 @@ internal sealed class ReadingService:IDisposable
         }catch(OperationCanceledException){}catch(Exception e){Status="阅读更新失败："+e.Message;next=DateTimeOffset.Now.AddMinutes(5);}
         finally{sync.Release();Changed();}
     }
-    private async Task Fetch(Source s){try{using var req=new HttpRequestMessage(HttpMethod.Get,s.Url);if(s.ParserVersion>=2&&s.ETag.Length>0)req.Headers.TryAddWithoutValidation("If-None-Match",s.ETag);if(s.ParserVersion>=2&&s.Modified.Length>0)req.Headers.TryAddWithoutValidation("If-Modified-Since",s.Modified);using var response=await http.SendAsync(req,HttpCompletionOption.ResponseHeadersRead,stop.Token);if(response.StatusCode==System.Net.HttpStatusCode.NotModified){s.Status="未更新（304）";}else{var bytes=await ReadingContent.Bounded(response,4_000_000,stop.Token);var parsed=ReadingContent.Parse(bytes,s);foreach(var a in parsed){var old=store.Find<Article>("article",a.Id)??store.FindUrl(a.Url);if(old==null){if(s.LastSuccess==null&&a.PublishedDay!=null&&string.CompareOrdinal(a.PublishedDay,DateTime.Now.AddDays(-7).ToString("yyyy-MM-dd"))<0)continue;a.FeedHash=ReadingAiPolicy.ContentKey(a);store.Put("article",a.Id,a);}else{store.UpdateArticle(old.Id,current=>ReadingAiPolicy.MergeFeed(current,a));}}s.ETag=response.Headers.ETag?.ToString()??"";s.Modified=response.Content.Headers.LastModified?.ToString("R")??"";s.ParserVersion=2;s.ArticleCount=parsed.Count;s.Status=parsed.Count==0?"更新成功 · 暂无条目":$"更新成功 · {parsed.Count}条来源记录";}s.LastSuccess=DateTimeOffset.Now;s.NextAttempt=null;s.Failures=0;}catch(Exception e)when(!stop.IsCancellationRequested){s.Failures++;s.NextAttempt=DateTimeOffset.Now.AddMinutes(Math.Min(120,5*Math.Pow(2,Math.Min(s.Failures,5))));s.Status="更新失败："+(e is HttpRequestException h?$"HTTP {h.StatusCode}":e is System.Xml.XmlException?"来源内容不是有效的订阅 XML，或包含不支持的实体声明；请稍后重试。已有文章仍可阅读。":e.Message);}finally{var latest=store.Find<Source>("source",s.Id);if(latest!=null){s.Subscribed=latest.Subscribed;store.Put("source",s.Id,s);}Changed();}}
+    private async Task Fetch(Source s)
+    {
+        var settings=Settings;
+        try{
+            List<Article>? parsed=null;
+            s.LastChannel=PublisherApis.Channel(s,settings);
+            if(PublisherApis.Enabled(s,settings)){
+                var batch=await publishers.Read(s,settings,stop.Token);parsed=batch.Articles;
+                s.ArticleCount=parsed.Count;
+                s.Status=batch.Partial?$"部分更新 · {parsed.Count}/{batch.Total} 条 API 记录（已到单次 500 条上限，目录未取全）":$"更新成功 · {parsed.Count} 条 API 记录";
+                s.ETag="";s.Modified="";
+            }else{
+                using var req=new HttpRequestMessage(HttpMethod.Get,s.Url);
+                if(s.ParserVersion>=2&&s.ETag.Length>0)req.Headers.TryAddWithoutValidation("If-None-Match",s.ETag);
+                if(s.ParserVersion>=2&&s.Modified.Length>0)req.Headers.TryAddWithoutValidation("If-Modified-Since",s.Modified);
+                using var response=await http.SendAsync(req,HttpCompletionOption.ResponseHeadersRead,stop.Token);
+                if(response.StatusCode==System.Net.HttpStatusCode.NotModified)s.Status="未更新（304）";
+                else{
+                    parsed=ReadingContent.Parse(await ReadingContent.Bounded(response,4_000_000,stop.Token),s);
+                    s.ETag=response.Headers.ETag?.ToString()??"";s.Modified=response.Content.Headers.LastModified?.ToString("R")??"";s.ParserVersion=2;
+                    s.ArticleCount=parsed.Count;s.Status=parsed.Count==0?"更新成功 · 暂无条目":$"更新成功 · {parsed.Count} 条 RSS 记录";
+                }
+            }
+            if(parsed!=null)foreach(var a in parsed){
+                var old=store.Find<Article>("article",a.Id)??store.FindUrl(a.Url);
+                if(old==null){
+                    if(s.LastSuccess==null&&a.PublishedDay!=null&&string.CompareOrdinal(a.PublishedDay,DateTime.Now.AddDays(-7).ToString("yyyy-MM-dd"))<0)continue;
+                    a.FeedHash=ReadingAiPolicy.ContentKey(a);store.Put("article",a.Id,a);
+                }else store.UpdateArticle(old.Id,current=>ReadingAiPolicy.MergeFeed(current,a));
+            }
+            s.LastSuccess=DateTimeOffset.Now;s.NextAttempt=null;s.Failures=0;
+        }catch(Exception e)when(!stop.IsCancellationRequested){
+            s.Failures++;s.NextAttempt=DateTimeOffset.Now.AddMinutes(Math.Min(120,5*Math.Pow(2,Math.Min(s.Failures,5))));
+            s.Status="更新失败："+(e is HttpRequestException h?$"HTTP {h.StatusCode}":e is System.Xml.XmlException?"来源内容不是有效的订阅 XML，或包含不支持的实体声明；请稍后重试。已有文章仍可阅读。":e.Message);
+        }finally{
+            var latest=store.Find<Source>("source",s.Id);if(latest!=null){s.Subscribed=latest.Subscribed;store.Put("source",s.Id,s);}Changed();
+        }
+    }
 
     internal Task LoadAbstract(Article article)=>Task.Run(async()=>{
         await slots.WaitAsync(stop.Token);
@@ -121,7 +161,7 @@ internal sealed class ReadingService:IDisposable
             var a=store.Find<Article>("article",article.Id)??article;
             if(a.HasAbstract||a.AbstractStatus.Length>0)return;
             string fingerprint=ReadingAiPolicy.ContentKey(a);
-            await ArticleMetadata.Enrich(a,http,stop.Token);
+            await ArticleMetadata.Enrich(a,http,stop.Token,publishers,Settings);
             var latest=store.Find<Article>("article",a.Id);
             if(latest!=null&&ReadingAiPolicy.ContentKey(latest)!=fingerprint)return;
             if(a.AbstractStatus.Length==0)a.AbstractStatus="当前来源未提供足够的公开摘要";
@@ -142,7 +182,7 @@ internal sealed class ReadingService:IDisposable
             if(ReadingAiPolicy.Missing(a,config).Length==0)return true;
             if(!a.HasAbstract&&a.AbstractStatus.Length==0){
                 string before=ReadingAiPolicy.ContentKey(a);
-                await slots.WaitAsync(stop.Token);try{await ArticleMetadata.Enrich(a,http,stop.Token);}finally{slots.Release();}
+                await slots.WaitAsync(stop.Token);try{await ArticleMetadata.Enrich(a,http,stop.Token,publishers,Settings);}finally{slots.Release();}
                 a=SaveMetadata(a,before)??a;
             }
             var fields=ReadingAiPolicy.Missing(a,config);if(fields.Length==0)return true;
@@ -253,6 +293,6 @@ internal sealed class ReadingService:IDisposable
     public void Dispose()
     {
         stop.Cancel();
-        _=Task.WhenAll(loop,monitor).ContinueWith(_=>{http.Dispose();summaries.Dispose();});
+        _=Task.WhenAll(loop,monitor).ContinueWith(_=>{http.Dispose();summaries.Dispose();publishers.Dispose();});
     }
 }

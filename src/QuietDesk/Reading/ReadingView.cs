@@ -241,6 +241,9 @@ internal sealed partial class ReadingView:UserControl
             var head=new DockPanel();var retry=ActionButton(checking?"正在检查…":"重新检查",async()=>{try{await model.Service.CheckSource(source.Id);}catch(Exception e){status.Text=e.Message;}});retry.IsEnabled=!checking;retry.ToolTip="只检查此来源，不改变订阅选择，不调用 AI";DockPanel.SetDock(retry,Dock.Right);head.Children.Add(retry);head.Children.Add(check);row.Children.Add(head);Ui.Gap(row,6);
             string state=checking?"正在请求来源…":(!source.Subscribed?"未订阅 · 不自动检查\n":"")+(source.Failures>0?"最近一次检查失败："+source.Status.Replace("更新失败：",""):source.Status);
             row.Children.Add(Ui.Text(state,12,!checking&&source.Failures>0?"#F0A9C8":"#C2BEC8"));
+            row.Children.Add(Ui.Text(PublisherApis.Description(source,model.Settings),12));
+            if(source.LastChannel.Length>0&&source.LastChannel!=PublisherApis.Channel(source,model.Settings))row.Children.Add(Ui.Text("上次检查渠道："+source.LastChannel+"；重新检查后更新结果。",12));
+            else if(source.LastChannel.Length==0&&source.LastSuccess.HasValue&&PublisherApis.Enabled(source,model.Settings))row.Children.Add(Ui.Text("历史结果来自 RSS；请重新检查以验证 API。",12));
             if(!checking&&source.Subscribed&&source.NextAttempt.HasValue)row.Children.Add(Ui.Text("自动重试不早于 "+source.NextAttempt.Value.ToLocalTime().ToString("MM-dd HH:mm")+"；可点击重新检查。",12));
             row.Children.Add(Ui.Text("最近成功："+(source.LastSuccess?.ToLocalTime().ToString("g")??"尚无")+" · 来源条目 "+source.ArticleCount,12));
             var card=Ui.Panel(row,new Thickness(14));card.Margin=new Thickness(0,0,0,10);sourcesPanel.Children.Add(card);
@@ -256,6 +259,7 @@ internal sealed partial class ReadingView:UserControl
     private UIElement Settings(){
         var outer=new DockPanel();var p=Stack();p.MaxWidth=620;p.HorizontalAlignment=HorizontalAlignment.Left;
         p.Children.Add(Ui.Text("阅读设置",24,"#FCFCFC"));Ui.Gap(p,8);p.Children.Add(Ui.Text("翻译与总结只发送标题和摘要。没有API也可以订阅和阅读原始摘要。",13));
+        AddPublisherSettings(p);
         var endpoint=Input(model.Settings.Endpoint.Length>0?model.Settings.Endpoint:"https://api.deepseek.com");var name=Input(model.Settings.Model.Length>0?model.Settings.Model:"deepseek-flash");
         var key=new PasswordBox{ToolTip="留空保留现有密钥",FontSize=14,Padding=new Thickness(0),MinHeight=40,Foreground=Ui.B("#FCFCFC"),Template=InputTemplate(typeof(PasswordBox))};
         var automatic=new CheckBox{Content=new TextBlock{Text="自动翻译总结已订阅期刊近7天的全部待完成内容",TextWrapping=TextWrapping.Wrap},IsChecked=model.Settings.Automatic,Margin=new Thickness(0,12,0,8)};

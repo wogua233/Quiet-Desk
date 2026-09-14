@@ -9,9 +9,10 @@ using HtmlAgilityPack;
 namespace QuietDesk.Reading;
 internal static class ArticleMetadata
 {
-    internal static async Task Enrich(Article article,HttpClient http,CancellationToken ct)
+    internal static async Task Enrich(Article article,HttpClient http,CancellationToken ct,PublisherApis? publishers=null,ReadingSettings? settings=null)
     {
-        try{using var response=await http.GetAsync(article.Url,HttpCompletionOption.ResponseHeadersRead,ct);var bytes=await ReadingContent.Bounded(response,2_000_000,ct);var doc=new HtmlDocument();doc.LoadHtml(Encoding.UTF8.GetString(bytes));
+        if(publishers!=null&&settings!=null&&PublisherApis.ApsArticle(article))await publishers.EnrichAps(article,settings,ct);
+        else try{using var response=await http.GetAsync(article.Url,HttpCompletionOption.ResponseHeadersRead,ct);var bytes=await ReadingContent.Bounded(response,2_000_000,ct);var doc=new HtmlDocument();doc.LoadHtml(Encoding.UTF8.GetString(bytes));
             string Meta(params string[] names)=>doc.DocumentNode.SelectNodes("//meta")?.FirstOrDefault(n=>names.Contains(n.GetAttributeValue("name",n.GetAttributeValue("property","")),StringComparer.OrdinalIgnoreCase))?.GetAttributeValue("content","")??"";
             string date=Meta("citation_online_date","article:published_time");if(DateTimeOffset.TryParse(date,out var d)){article.PublishedDay=date.Length==10?date:d.ToLocalTime().ToString("yyyy-MM-dd");article.DateEvidence="出版社在线发表元数据";}
             string description=article.Basis=="基于导读"?Meta("description","og:description"):Meta("citation_abstract","dc.description");var node=doc.DocumentNode.SelectSingleNode("//*[contains(@class,'abstract-content')]|//*[@id='Abs1-content']|//*[@role='doc-abstract']|//*[contains(@class,'article__abstract')]");if(node!=null)description=node.InnerHtml;

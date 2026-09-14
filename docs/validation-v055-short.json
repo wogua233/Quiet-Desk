@@ -1,0 +1,10 @@
+{
+  "cachedArticles": 10000,
+  "syncSeconds": 1.9650728,
+  "sourceStatus": "\u66F4\u65B0\u6210\u529F \u00B7 24 \u6761 RSS \u8BB0\u5F55",
+  "queryMeanMs": 56.041895000000004,
+  "durationSeconds": 30.2595144,
+  "averageWholeMachineCpuPercent": 0.019364847606320915,
+  "peakPrivateCommitBytes": 46063616,
+  "scope": "isolated reading service; no WPF/audio; private commit is not private working set"
+}

@@ -66,6 +66,16 @@ internal sealed class ReadingStore
             cmd.CommandText="UPDATE objects SET json=json_set(json,'$.Subscribed',json(CASE WHEN id='jacs' THEN 'true' ELSE 'false' END)) WHERE kind='source'; INSERT OR REPLACE INTO objects VALUES('migration','bilingual','1');";
             cmd.ExecuteNonQuery();tx.Commit();}
     }
+    internal void ResetApsAbstractFailures(bool migrate=false){
+        lock(gate){
+            if(migrate&&Find<int>("migration","aps-abstract-api")==1)return;
+            using var c=Open();using var tx=c.BeginTransaction();using var cmd=c.CreateCommand();cmd.Transaction=tx;
+            cmd.CommandText="UPDATE objects SET json=json_set(json,'$.AbstractStatus','') WHERE kind='article' AND json_extract(json,'$.SourceId') IN ('prl','prx','prb','pre') AND (length(COALESCE(json_extract(json,'$.Abstract'),''))<100 OR rtrim(json_extract(json,'$.Abstract')) LIKE '%…' OR rtrim(json_extract(json,'$.Abstract')) LIKE '%...');";
+            cmd.ExecuteNonQuery();
+            if(migrate){cmd.CommandText="INSERT OR REPLACE INTO objects VALUES('migration','aps-abstract-api','1')";cmd.ExecuteNonQuery();}
+            tx.Commit();
+        }
+    }
     internal List<string> RecentIds(DateTime today){
         lock(gate){using var c=Open();using var cmd=c.CreateCommand();
             cmd.CommandText="SELECT id FROM objects WHERE kind='article' AND COALESCE(json_extract(json,'$.PublishedDay'),date(json_extract(json,'$.Discovered'),'localtime')) BETWEEN $from AND $to AND json_extract(json,'$.SourceId') IN (SELECT id FROM objects WHERE kind='source' AND json_extract(json,'$.Subscribed')=1) ORDER BY json_extract(json,'$.PublishedDay') DESC, id";

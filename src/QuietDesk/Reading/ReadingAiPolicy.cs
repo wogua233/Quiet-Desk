@@ -40,10 +40,15 @@ internal static class ReadingAiPolicy
         bool legacy=old.FeedHash.Length==0;
         bool changed=legacy?(old.Title!=incoming.Title||(!old.HasAbstract&&incoming.Abstract.Length>0&&old.Abstract!=incoming.Abstract)):old.FeedHash!=hash;
         if(changed){
-            old.Title=incoming.Title;old.Abstract=incoming.Abstract;old.Basis=incoming.Basis;
-            old.AbstractStatus="";old.SummaryKey="";old.Status="原文已更新 · 待更新";
+            string previous=ContentKey(old);
+            old.Title=incoming.Title;
+            // A different delivery channel may omit an abstract that is already cached.
+            if(incoming.Abstract.Length>0){old.Abstract=incoming.Abstract;old.Basis=incoming.Basis;}
+            old.AbstractStatus=old.HasAbstract?"":incoming.AbstractStatus;
+            if(ContentKey(old)!=previous){old.SummaryKey="";old.Status="原文已更新 · 待更新";}
         }
         old.FeedHash=hash;
+        if(!old.HasAbstract&&incoming.AbstractStatus.Length>0)old.AbstractStatus=incoming.AbstractStatus;
         if(incoming.PublishedDay!=null){old.PublishedDay=incoming.PublishedDay;old.DateEvidence=incoming.DateEvidence;}
     }
 }

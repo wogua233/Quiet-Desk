@@ -1,0 +1,30 @@
+[
+  {
+    "Name": "PRL",
+    "Doi": "10.1103/gg3l-cghb",
+    "AbstractStatus": "APS \u6458\u8981 API \u672A\u63D0\u4F9B\u8BE5\u6587\u7AE0\uFF08HTTP 401\uFF1B\u975E\u5F00\u653E\u5185\u5BB9\u53EF\u80FD\u9700\u8981 APS \u6388\u6743\uFF09",
+    "abstractCharacters": 0,
+    "HasAbstract": false
+  },
+  {
+    "Name": "PRX",
+    "Doi": "10.1103/vl1q-p27w",
+    "AbstractStatus": "\u5DF2\u901A\u8FC7 APS Harvest API \u83B7\u53D6\u6458\u8981",
+    "abstractCharacters": 1316,
+    "HasAbstract": true
+  },
+  {
+    "Name": "PRB",
+    "Doi": "10.1103/pyhy-lc7r",
+    "AbstractStatus": "\u5DF2\u901A\u8FC7 APS Harvest API \u83B7\u53D6\u6458\u8981",
+    "abstractCharacters": 818,
+    "HasAbstract": true
+  },
+  {
+    "Name": "PRE",
+    "Doi": "10.1103/ypvb-3zn3",
+    "AbstractStatus": "APS \u6458\u8981 API \u672A\u63D0\u4F9B\u8BE5\u6587\u7AE0\uFF08HTTP 401\uFF1B\u975E\u5F00\u653E\u5185\u5BB9\u53EF\u80FD\u9700\u8981 APS \u6388\u6743\uFF09",
+    "abstractCharacters": 0,
+    "HasAbstract": false
+  }
+]

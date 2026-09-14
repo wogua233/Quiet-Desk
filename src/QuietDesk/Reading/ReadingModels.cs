@@ -11,6 +11,20 @@ public sealed class ReadingSettings
     public string Endpoint {get;set;}="";
     public string Model {get;set;}="";
     public string ProtectedKey {get;set;}="";
+    public string ProtectedSpringerKey {get;set;}="";
+    public string ProtectedGuardianKey {get;set;}="";
+    public string ProtectedApsKey {get;set;}="";
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string ApsKey=>UnprotectSourceKey(ProtectedApsKey);
+    public void SetApsKey(string key)=>ProtectedApsKey=ProtectSourceKey(key);
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string SpringerKey=>UnprotectSourceKey(ProtectedSpringerKey);
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string GuardianKey=>UnprotectSourceKey(ProtectedGuardianKey);
+    public void SetSpringerKey(string key)=>ProtectedSpringerKey=ProtectSourceKey(key);
+    public void SetGuardianKey(string key)=>ProtectedGuardianKey=ProtectSourceKey(key);
+    private static string ProtectSourceKey(string key)=>key.Length==0?"":Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(key),null,DataProtectionScope.CurrentUser));
+    private static string UnprotectSourceKey(string key){try{return key.Length==0?"":Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(key),null,DataProtectionScope.CurrentUser));}catch{return "";}}
     public string AbstractConsent {get;set;}="";
     public int AbstractModeVersion {get;set;}
     public bool Automatic {get;set;}
@@ -28,6 +42,7 @@ public sealed class Source
     public string Id {get;set;}="";public string Name {get;set;}="";public string Url {get;set;}="";public string Publisher {get;set;}="";
     public bool Subscribed {get;set;} public string Status {get;set;}="尚未更新";public DateTimeOffset? LastSuccess {get;set;}
     public string ETag {get;set;}="";public string Modified {get;set;}="";public DateTimeOffset? NextAttempt {get;set;} public int Failures {get;set;} public int ArticleCount {get;set;} public int ParserVersion {get;set;}
+    public string LastChannel {get;set;}="";
     public override string ToString()=>Name;
 }
 public sealed class Article
